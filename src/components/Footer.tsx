@@ -7,17 +7,18 @@ const Footer = () => {
   const { t } = useLanguage();
   
   const links = {
-    platform: [
-      { label: "Scoly Primaire", href: "/shop?category=primaire" },
-      { label: "Scoly Secondaire", href: "/shop?category=secondaire" },
-      { label: "Scoly Université", href: "/shop?category=universite" },
-      { label: "Scoly Bureautique", href: "/shop?category=bureautique" },
-      { label: "Scoly Librairie", href: "/shop?category=librairie" },
+    categories: [
+      { label: "Scoly Primaire", href: "/shop?category=scoly-primaire" },
+      { label: "Scoly Secondaire", href: "/shop?category=scoly-secondaire" },
+      { label: "Scoly Université", href: "/shop?category=scoly-universite" },
+      { label: "Scoly Bureautique", href: "/shop?category=scoly-bureautique" },
+      { label: "Scoly Librairie", href: "/shop?category=scoly-librairie" },
     ],
     resources: [
       { label: "Journal Scoly", href: "/journal" },
-      { label: "Vendeurs", href: "/vendor" },
       { label: t.footer.faq, href: "/faq" },
+      { label: t.nav.about, href: "/about" },
+      { label: t.nav.contact, href: "/contact" },
     ],
     legal: [
       { label: t.footer.terms, href: "/terms" },
@@ -63,9 +64,9 @@ const Footer = () => {
 
           {/* Links Columns */}
           <div>
-            <h4 className="font-display font-semibold text-lg mb-4">Scoly Marketplace</h4>
+            <h4 className="font-display font-semibold text-lg mb-4">Nos catégories</h4>
             <ul className="space-y-3">
-              {links.platform.map((link, index) => (
+              {links.categories.map((link, index) => (
                 <li key={index}>
                   <Link to={link.href} className="text-primary-foreground/70 hover:text-accent transition-colors">
                     {link.label}

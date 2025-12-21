@@ -15,10 +15,10 @@ const SpacesSection = () => {
             Nos services
           </span>
           <h2 className="text-3xl lg:text-5xl font-display font-bold text-foreground mb-4">
-            Votre boutique unique pour l'éducation
+            Tout pour votre réussite scolaire
           </h2>
           <p className="text-lg text-muted-foreground">
-            Scoly vous offre tout ce dont vous avez besoin : fournitures de qualité et articles éducatifs
+            Scoly vous offre des produits de qualité et des ressources éducatives pour accompagner votre parcours
           </p>
         </div>
 
@@ -30,13 +30,13 @@ const SpacesSection = () => {
             icon={<ShoppingBag size={32} />}
             title="Boutique Scoly"
             subtitle="Fournitures scolaires"
-            description="Retrouvez toutes vos fournitures scolaires et bureautiques. Primaire, Secondaire, Université et plus encore."
+            description="Retrouvez toutes vos fournitures scolaires et bureautiques organisées par niveau : Primaire, Secondaire, Université et plus encore."
             features={[
               { icon: <Package size={18} />, text: "Catalogue complet" },
               { icon: <Truck size={18} />, text: "Livraison gratuite" },
               { icon: <CreditCard size={18} />, text: "Paiement Mobile Money" },
             ]}
-            stats={{ value: "5", label: "Catégories" }}
+            stats={{ value: "1000+", label: "Produits" }}
             gradient="from-primary to-primary-light"
             buttonVariant="hero"
             href="/shop"
@@ -46,9 +46,9 @@ const SpacesSection = () => {
           <SpaceCard
             id="livraison"
             icon={<Truck size={32} />}
-            title="Livraison Gratuite"
+            title="Livraison gratuite"
             subtitle="Partout en Côte d'Ivoire"
-            description="Profitez de la livraison gratuite sur toutes vos commandes. Nous livrons dans tout le pays."
+            description="Profitez de la livraison gratuite sur toutes vos commandes. Nous livrons dans toutes les villes du pays avec un suivi en temps réel."
             features={[
               { icon: <Package size={18} />, text: "Emballage soigné" },
               { icon: <Star size={18} />, text: "Suivi en temps réel" },
@@ -65,12 +65,12 @@ const SpacesSection = () => {
             id="journal"
             icon={<Newspaper size={32} />}
             title="Journal Scoly"
-            subtitle="Articles & Publications"
-            description="Lisez et publiez des articles éducatifs, ouvrages et ressources pour les élèves et étudiants."
+            subtitle="Articles et Publications"
+            description="Lisez et découvrez des articles éducatifs, des ressources pédagogiques et des guides pour accompagner votre apprentissage."
             features={[
-              { icon: <PenTool size={18} />, text: "Publiez vos articles" },
+              { icon: <PenTool size={18} />, text: "Articles de qualité" },
               { icon: <BookOpen size={18} />, text: "Contenus éducatifs" },
-              { icon: <Star size={18} />, text: "Auteurs vérifiés" },
+              { icon: <Star size={18} />, text: "Ressources gratuites" },
             ]}
             stats={{ value: "100+", label: "Articles" }}
             gradient="from-accent to-yellow-400"
@@ -141,7 +141,7 @@ const SpaceCard = ({ id, icon, title, subtitle, description, features, stats, gr
           </div>
           <Link to={href}>
             <Button variant={buttonVariant}>
-              {t.common.learnMore}
+              Découvrir
               <ArrowRight size={18} />
             </Button>
           </Link>

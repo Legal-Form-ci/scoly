@@ -41,7 +41,7 @@ const HeroSection = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-8 animate-slide-up">
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             <span className="text-primary-foreground/90 text-sm font-medium">
-              Boutique officielle Scoly - Livraison gratuite 🚚
+              Votre partenaire pour la réussite scolaire 🎓
             </span>
           </div>
 
@@ -53,7 +53,7 @@ const HeroSection = () => {
 
           {/* Subheading */}
           <p className="text-lg sm:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 animate-slide-up animation-delay-200">
-            Votre boutique unique pour toutes les fournitures scolaires et bureautiques en Côte d'Ivoire. Livraison gratuite sur toutes les commandes.
+            Scoly vous accompagne dans votre parcours éducatif avec des fournitures de qualité, livrées gratuitement partout en Côte d'Ivoire.
           </p>
 
           {/* CTA Buttons */}
@@ -61,7 +61,7 @@ const HeroSection = () => {
             <Link to="/shop">
               <Button variant="accent" size="xl" className="w-full sm:w-auto">
                 <ShoppingBag size={20} />
-                Découvrir la boutique
+                Découvrir nos produits
               </Button>
             </Link>
             <Link to="/journal">
@@ -92,14 +92,14 @@ const HeroSection = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up animation-delay-500">
             <FeatureCard
               icon={<ShoppingBag size={28} />}
-              title="Boutique Scoly"
-              description="Fournitures scolaires & bureautiques"
+              title="Large catalogue"
+              description="Plus de 1000 produits disponibles"
               color="bg-primary-light/20"
               href="/shop"
             />
             <FeatureCard
               icon={<Truck size={28} />}
-              title="Livraison Gratuite"
+              title="Livraison gratuite"
               description="Sur toutes vos commandes"
               color="bg-secondary/20"
               href="/shop"
@@ -107,7 +107,7 @@ const HeroSection = () => {
             <FeatureCard
               icon={<Newspaper size={28} />}
               title="Journal Scoly"
-              description="Articles & contenus éducatifs"
+              description="Articles et ressources éducatives"
               color="bg-accent/20"
               href="/journal"
             />
