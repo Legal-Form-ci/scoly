@@ -1,0 +1,238 @@
+import { useState } from "react";
+import { Mail, Phone, MapPin, Send, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const Contact = () => {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const contactSchema = z.object({
+    name: z.string().min(2).max(100),
+    email: z.string().email().max(255),
+    subject: z.string().min(5).max(200),
+    message: z.string().min(10).max(1000),
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    const result = contactSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setLoading(true);
+
+    // Simulate form submission
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    setSuccess(true);
+    toast({
+      title: t.contact.success,
+      description: t.contact.successMessage,
+    });
+
+    setLoading(false);
+  };
+
+  if (success) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-12">
+          <div className="container mx-auto px-4 max-w-lg text-center py-20">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle size={48} className="text-primary" />
+            </div>
+            <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+              {t.contact.success}
+            </h1>
+            <p className="text-muted-foreground mb-6">
+              {t.contact.successMessage}
+            </p>
+            <Button variant="hero" onClick={() => setSuccess(false)}>
+              {t.common.back}
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-background">
+      <Navbar />
+      
+      {/* Hero Section */}
+      <section className="pt-24 pb-12 bg-gradient-primary">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-primary-foreground">
+            <h1 className="text-4xl lg:text-5xl font-display font-bold mb-4">
+              {t.contact.title}
+            </h1>
+            <p className="text-lg opacity-90 max-w-2xl mx-auto">
+              {t.contact.subtitle}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Form & Info */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {/* Contact Info */}
+            <div className="space-y-6">
+              <h2 className="text-2xl font-display font-bold text-foreground mb-6">
+                {t.contact.info}
+              </h2>
+
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-primary/10 flex-shrink-0">
+                  <MapPin size={24} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Adresse</h3>
+                  <p className="text-muted-foreground">{t.footer.address}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-primary/10 flex-shrink-0">
+                  <Phone size={24} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Téléphone</h3>
+                  <p className="text-muted-foreground">{t.footer.phone}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-primary/10 flex-shrink-0">
+                  <Mail size={24} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Email</h3>
+                  <p className="text-muted-foreground">{t.footer.email}</p>
+                </div>
+              </div>
+
+              {/* Map placeholder */}
+              <div className="aspect-video bg-muted rounded-xl overflow-hidden mt-8">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d127143.02567408968!2d-4.0762584!3d5.3599517!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfc1ea5311959121%3A0x3fe70ddce19221a6!2sAbidjan%2C%20C%C3%B4te%20d&#39;Ivoire!5e0!3m2!1sfr!2sfr!4v1699999999999!5m2!1sfr!2sfr"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <div className="lg:col-span-2">
+              <div className="bg-card rounded-2xl border border-border p-8">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="name">{t.contact.name}</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="mt-1"
+                        required
+                      />
+                      {errors.name && (
+                        <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="email">{t.contact.email}</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="mt-1"
+                        required
+                      />
+                      {errors.email && (
+                        <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="subject">{t.contact.subject}</Label>
+                    <Input
+                      id="subject"
+                      value={formData.subject}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      className="mt-1"
+                      required
+                    />
+                    {errors.subject && (
+                      <p className="text-sm text-destructive mt-1">{errors.subject}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="message">{t.contact.message}</Label>
+                    <Textarea
+                      id="message"
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      className="mt-1 min-h-[150px]"
+                      required
+                    />
+                    {errors.message && (
+                      <p className="text-sm text-destructive mt-1">{errors.message}</p>
+                    )}
+                  </div>
+
+                  <Button type="submit" variant="hero" size="lg" disabled={loading}>
+                    {loading ? t.common.loading : t.contact.send}
+                    <Send size={18} />
+                  </Button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </main>
+  );
+};
+
+export default Contact;
