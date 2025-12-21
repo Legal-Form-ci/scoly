@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, ShoppingCart, Heart, Star } from "lucide-react";
+import { Search, Filter, ShoppingCart, Heart, Star, Truck, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 interface Product {
   id: string;
@@ -27,6 +27,7 @@ interface Product {
   image_url: string | null;
   is_featured: boolean;
   category_id: string | null;
+  free_shipping: boolean;
 }
 
 interface Category {
@@ -41,17 +42,31 @@ interface Category {
 const Shop = () => {
   const { language, t } = useLanguage();
   const { addToCart } = useCart();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    searchParams.get("category") || null
+  );
   const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    if (categoryParam) {
+      // Find category by slug
+      const cat = categories.find(c => c.slug === categoryParam);
+      if (cat) {
+        setSelectedCategory(cat.id);
+      }
+    }
+  }, [searchParams, categories]);
 
   const fetchProducts = async () => {
     try {
@@ -93,12 +108,12 @@ const Shop = () => {
     }
   };
 
-  const getLocalizedDescription = (product: Product) => {
-    switch (language) {
-      case 'en': return product.description_en;
-      case 'de': return product.description_de;
-      case 'es': return product.description_es;
-      default: return product.description_fr;
+  const handleCategoryClick = (categoryId: string | null, slug?: string) => {
+    setSelectedCategory(categoryId);
+    if (slug) {
+      setSearchParams({ category: slug });
+    } else {
+      setSearchParams({});
     }
   };
 
@@ -130,11 +145,46 @@ const Shop = () => {
         <div className="container mx-auto px-4">
           <div className="text-center text-primary-foreground">
             <h1 className="text-4xl lg:text-5xl font-display font-bold mb-4">
-              {t.shop.title}
+              Boutique Scoly
             </h1>
-            <p className="text-lg opacity-90 max-w-2xl mx-auto">
-              {t.shop.subtitle}
+            <p className="text-lg opacity-90 max-w-2xl mx-auto mb-4">
+              Toutes vos fournitures scolaires et bureautiques en un seul endroit
             </p>
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <Truck size={18} />
+              <span>Livraison gratuite sur toutes les commandes</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Scoly Categories Banner */}
+      <section className="py-6 bg-muted/50 border-b border-border">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => handleCategoryClick(null)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                !selectedCategory 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-card border border-border hover:bg-muted'
+              }`}
+            >
+              Tous les produits
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => handleCategoryClick(category.id, category.slug)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  selectedCategory === category.id 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-card border border-border hover:bg-muted'
+                }`}
+              >
+                {getLocalizedName(category)}
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -164,7 +214,7 @@ const Shop = () => {
                 <h3 className="font-semibold text-foreground mb-3">{t.shop.categories}</h3>
                 <div className="space-y-2">
                   <button
-                    onClick={() => setSelectedCategory(null)}
+                    onClick={() => handleCategoryClick(null)}
                     className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                       !selectedCategory ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                     }`}
@@ -174,7 +224,7 @@ const Shop = () => {
                   {categories.map((category) => (
                     <button
                       key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
+                      onClick={() => handleCategoryClick(category.id, category.slug)}
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                         selectedCategory === category.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                       }`}
@@ -199,10 +249,28 @@ const Shop = () => {
                   <option value="popular">{t.shop.sortPopular}</option>
                 </select>
               </div>
+
+              {/* Free Shipping Banner */}
+              <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-2">
+                  <Truck size={20} />
+                  <span className="font-semibold">Livraison gratuite</span>
+                </div>
+                <p className="text-sm text-green-600 dark:text-green-500">
+                  Sur toutes vos commandes, partout en Côte d'Ivoire
+                </p>
+              </div>
             </aside>
 
             {/* Products Grid */}
             <div className="flex-1">
+              {/* Results count */}
+              <div className="mb-6 flex items-center justify-between">
+                <p className="text-muted-foreground">
+                  {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''} trouvé{filteredProducts.length > 1 ? 's' : ''}
+                </p>
+              </div>
+
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[...Array(6)].map((_, i) => (
@@ -215,6 +283,7 @@ const Shop = () => {
                 </div>
               ) : filteredProducts.length === 0 ? (
                 <div className="text-center py-12">
+                  <ShoppingCart size={48} className="mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">{t.common.noResults}</p>
                 </div>
               ) : (
@@ -246,6 +315,14 @@ const Shop = () => {
                           {product.is_featured && (
                             <Badge variant="secondary">{t.shop.featured}</Badge>
                           )}
+                        </div>
+
+                        {/* Free Shipping Badge */}
+                        <div className="absolute bottom-3 left-3">
+                          <Badge className="bg-green-500 text-white">
+                            <Truck size={12} className="mr-1" />
+                            Livraison gratuite
+                          </Badge>
                         </div>
 
                         {/* Wishlist Button */}
