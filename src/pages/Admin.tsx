@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-type TabType = "dashboard" | "products" | "categories" | "orders" | "users" | "vendors" | "commissions" | "articles" | "promotions";
+type TabType = "dashboard" | "products" | "categories" | "orders" | "users" | "articles" | "promotions" | "notifications";
 
 const Admin = () => {
   const { t } = useLanguage();
@@ -75,8 +75,6 @@ const Admin = () => {
     { id: "categories", label: "Catégories", icon: FolderTree },
     { id: "orders", label: "Commandes", icon: ShoppingBag },
     { id: "users", label: "Utilisateurs", icon: Users },
-    { id: "vendors", label: "Vendeurs", icon: Users },
-    { id: "commissions", label: "Commissions", icon: Tag },
     { id: "articles", label: "Articles Journal", icon: Package },
     { id: "promotions", label: "Promotions", icon: Tag },
   ];
@@ -149,8 +147,6 @@ const Admin = () => {
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "orders" && <OrdersTab />}
           {activeTab === "users" && <UsersTab />}
-          {activeTab === "vendors" && <VendorsTab />}
-          {activeTab === "commissions" && <CommissionsTab />}
           {activeTab === "articles" && <ArticlesTab />}
           {activeTab === "promotions" && <PromotionsTab />}
         </div>

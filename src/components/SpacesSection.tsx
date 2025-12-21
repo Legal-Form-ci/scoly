@@ -1,4 +1,4 @@
-import { ShoppingBag, Newspaper, Store, ArrowRight, Package, Truck, CreditCard, Star, PenTool, BookOpen } from "lucide-react";
+import { ShoppingBag, Newspaper, Truck, ArrowRight, Package, CreditCard, Star, PenTool, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -15,30 +15,48 @@ const SpacesSection = () => {
             Nos services
           </span>
           <h2 className="text-3xl lg:text-5xl font-display font-bold text-foreground mb-4">
-            Trois espaces, une seule plateforme
+            Votre boutique unique pour l'éducation
           </h2>
           <p className="text-lg text-muted-foreground">
-            Découvrez notre marketplace, notre journal scolaire et notre espace vendeur
+            Scoly vous offre tout ce dont vous avez besoin : fournitures de qualité et articles éducatifs
           </p>
         </div>
 
         {/* Spaces Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Marketplace */}
+          {/* Boutique */}
           <SpaceCard
-            id="marketplace"
+            id="boutique"
             icon={<ShoppingBag size={32} />}
-            title="Marketplace"
-            subtitle="Achetez vos fournitures"
-            description="Trouvez toutes vos fournitures scolaires et bureautiques auprès de vendeurs vérifiés en Côte d'Ivoire."
+            title="Boutique Scoly"
+            subtitle="Fournitures scolaires"
+            description="Retrouvez toutes vos fournitures scolaires et bureautiques. Primaire, Secondaire, Université et plus encore."
             features={[
-              { icon: <Package size={18} />, text: "Milliers de produits" },
-              { icon: <Truck size={18} />, text: "Livraison rapide" },
+              { icon: <Package size={18} />, text: "Catalogue complet" },
+              { icon: <Truck size={18} />, text: "Livraison gratuite" },
               { icon: <CreditCard size={18} />, text: "Paiement Mobile Money" },
             ]}
-            stats={{ value: "1,200+", label: "Produits" }}
+            stats={{ value: "5", label: "Catégories" }}
             gradient="from-primary to-primary-light"
             buttonVariant="hero"
+            href="/shop"
+          />
+
+          {/* Livraison Gratuite */}
+          <SpaceCard
+            id="livraison"
+            icon={<Truck size={32} />}
+            title="Livraison Gratuite"
+            subtitle="Partout en Côte d'Ivoire"
+            description="Profitez de la livraison gratuite sur toutes vos commandes. Nous livrons dans tout le pays."
+            features={[
+              { icon: <Package size={18} />, text: "Emballage soigné" },
+              { icon: <Star size={18} />, text: "Suivi en temps réel" },
+              { icon: <CreditCard size={18} />, text: "Paiement à la livraison" },
+            ]}
+            stats={{ value: "24-72h", label: "Délai moyen" }}
+            gradient="from-secondary to-secondary-light"
+            buttonVariant="coral"
             href="/shop"
           />
 
@@ -54,28 +72,10 @@ const SpacesSection = () => {
               { icon: <BookOpen size={18} />, text: "Contenus éducatifs" },
               { icon: <Star size={18} />, text: "Auteurs vérifiés" },
             ]}
-            stats={{ value: "500+", label: "Articles" }}
-            gradient="from-secondary to-secondary-light"
-            buttonVariant="coral"
-            href="/journal"
-          />
-
-          {/* Espace Vendeur */}
-          <SpaceCard
-            id="vendeur"
-            icon={<Store size={32} />}
-            title="Espace Vendeur"
-            subtitle="Vendez vos produits"
-            description="Créez votre boutique en ligne et vendez vos fournitures scolaires et bureautiques sur Scoly."
-            features={[
-              { icon: <Package size={18} />, text: "Gestion de catalogue" },
-              { icon: <CreditCard size={18} />, text: "Paiements sécurisés" },
-              { icon: <Star size={18} />, text: "Commissions réduites" },
-            ]}
-            stats={{ value: "100+", label: "Vendeurs" }}
+            stats={{ value: "100+", label: "Articles" }}
             gradient="from-accent to-yellow-400"
             buttonVariant="accent"
-            href="/vendor"
+            href="/journal"
           />
         </div>
       </div>

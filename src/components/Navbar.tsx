@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, ChevronDown, User, ShoppingCart, LogOut, Shield, Store, Newspaper } from "lucide-react";
+import { Menu, X, User, ShoppingCart, LogOut, Shield, Bell, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Logo from "./Logo";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -10,7 +10,6 @@ import { useCart } from "@/contexts/CartContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const { t } = useLanguage();
   const { user, signOut, isAdmin } = useAuth();
   const { itemCount } = useCart();
@@ -19,7 +18,6 @@ const Navbar = () => {
   const navItems = [
     { label: "Boutique", href: "/shop" },
     { label: "Journal", href: "/journal" },
-    { label: "Vendeurs", href: "/vendor" },
     { label: t.nav.about, href: "/about" },
     { label: t.nav.contact, href: "/contact" },
   ];
@@ -51,12 +49,10 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Right Actions - Language switcher separated */}
+          {/* Right Actions */}
           <div className="hidden lg:flex items-center gap-2">
-            {/* Language Switcher - Standalone */}
             <LanguageSwitcher />
             
-            {/* Separator */}
             <div className="w-px h-6 bg-border mx-2" />
             
             <Link to="/cart">
@@ -100,7 +96,6 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {isOpen && (
           <div className="lg:hidden py-4 border-t border-border animate-fade-in">
-            {/* Language Switcher at top of mobile menu */}
             <div className="px-4 pb-4 border-b border-border mb-4">
               <LanguageSwitcher />
             </div>
@@ -124,9 +119,6 @@ const Navbar = () => {
                         <Button variant="outline" className="w-full"><Shield size={18} />Administration</Button>
                       </Link>
                     )}
-                    <Link to="/vendor" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full"><Store size={18} />Espace Vendeur</Button>
-                    </Link>
                     <Link to="/account" onClick={() => setIsOpen(false)}><Button variant="outline" className="w-full"><User size={18} />{t.nav.myAccount}</Button></Link>
                     <Button variant="ghost" className="w-full" onClick={handleLogout}><LogOut size={18} />{t.nav.logout}</Button>
                   </>

@@ -1,4 +1,4 @@
-import { ArrowRight, ShoppingBag, Newspaper, Store, BookOpen } from "lucide-react";
+import { ArrowRight, ShoppingBag, Newspaper, BookOpen, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -6,13 +6,13 @@ import { useLanguage } from "@/i18n/LanguageContext";
 const HeroSection = () => {
   const { t } = useLanguage();
   
-  // Scoly cycles for marketplace
-  const scolyCycles = [
-    { name: "Scoly Primaire", slug: "primaire", color: "bg-green-500/20" },
-    { name: "Scoly Secondaire", slug: "secondaire", color: "bg-blue-500/20" },
-    { name: "Scoly Université", slug: "universite", color: "bg-purple-500/20" },
-    { name: "Scoly Bureautique", slug: "bureautique", color: "bg-orange-500/20" },
-    { name: "Scoly Librairie", slug: "librairie", color: "bg-red-500/20" },
+  // Scoly categories
+  const scolyCategories = [
+    { name: "Scoly Primaire", slug: "scoly-primaire", color: "bg-green-500/20" },
+    { name: "Scoly Secondaire", slug: "scoly-secondaire", color: "bg-blue-500/20" },
+    { name: "Scoly Université", slug: "scoly-universite", color: "bg-purple-500/20" },
+    { name: "Scoly Bureautique", slug: "scoly-bureautique", color: "bg-orange-500/20" },
+    { name: "Scoly Librairie", slug: "scoly-librairie", color: "bg-red-500/20" },
   ];
 
   return (
@@ -41,7 +41,7 @@ const HeroSection = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-8 animate-slide-up">
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             <span className="text-primary-foreground/90 text-sm font-medium">
-              {t.hero.badge}
+              Boutique officielle Scoly - Livraison gratuite 🚚
             </span>
           </div>
 
@@ -53,69 +53,63 @@ const HeroSection = () => {
 
           {/* Subheading */}
           <p className="text-lg sm:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 animate-slide-up animation-delay-200">
-            {t.hero.subtitle}
+            Votre boutique unique pour toutes les fournitures scolaires et bureautiques en Côte d'Ivoire. Livraison gratuite sur toutes les commandes.
           </p>
 
-          {/* CTA Buttons - 3 buttons */}
+          {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-slide-up animation-delay-300">
             <Link to="/shop">
               <Button variant="accent" size="xl" className="w-full sm:w-auto">
                 <ShoppingBag size={20} />
-                Acheter vos fournitures
+                Découvrir la boutique
               </Button>
             </Link>
             <Link to="/journal">
               <Button variant="heroOutline" size="xl" className="w-full sm:w-auto">
                 <Newspaper size={20} />
-                Découvrir le Journal
-              </Button>
-            </Link>
-            <Link to="/auth">
-              <Button variant="heroOutline" size="xl" className="w-full sm:w-auto">
-                <Store size={20} />
-                Devenir vendeur
+                Lire le Journal
               </Button>
             </Link>
           </div>
 
-          {/* Scoly Cycles - Quick access */}
+          {/* Scoly Categories - Quick access */}
           <div className="mb-12 animate-slide-up animation-delay-400">
-            <p className="text-primary-foreground/60 text-sm mb-4">Parcourir par cycle :</p>
+            <p className="text-primary-foreground/60 text-sm mb-4">Parcourir par catégorie :</p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              {scolyCycles.map((cycle) => (
+              {scolyCategories.map((category) => (
                 <Link
-                  key={cycle.slug}
-                  to={`/shop?category=${cycle.slug}`}
-                  className={`px-4 py-2 rounded-full ${cycle.color} backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium hover:bg-primary-foreground/20 hover:scale-105 transition-all`}
+                  key={category.slug}
+                  to={`/shop?category=${category.slug}`}
+                  className={`px-4 py-2 rounded-full ${category.color} backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium hover:bg-primary-foreground/20 hover:scale-105 transition-all`}
                 >
-                  {cycle.name}
+                  {category.name}
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* Feature Cards - Scoly structure */}
+          {/* Feature Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up animation-delay-500">
             <FeatureCard
               icon={<ShoppingBag size={28} />}
-              title="Scoly Marketplace"
+              title="Boutique Scoly"
               description="Fournitures scolaires & bureautiques"
               color="bg-primary-light/20"
+              href="/shop"
+            />
+            <FeatureCard
+              icon={<Truck size={28} />}
+              title="Livraison Gratuite"
+              description="Sur toutes vos commandes"
+              color="bg-secondary/20"
               href="/shop"
             />
             <FeatureCard
               icon={<Newspaper size={28} />}
               title="Journal Scoly"
               description="Articles & contenus éducatifs"
-              color="bg-secondary/20"
-              href="/journal"
-            />
-            <FeatureCard
-              icon={<Store size={28} />}
-              title="Espace Vendeur"
-              description="Vendez vos produits en ligne"
               color="bg-accent/20"
-              href="/vendor"
+              href="/journal"
             />
           </div>
         </div>

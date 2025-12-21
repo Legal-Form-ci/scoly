@@ -14,6 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      article_comments: {
+        Row: {
+          article_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_approved: boolean | null
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_comments_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_likes: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_likes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           author_id: string
@@ -267,6 +331,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           id: string
@@ -354,6 +451,59 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          payment_method: string
+          payment_reference: string | null
+          phone_number: string | null
+          status: string
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          payment_method: string
+          payment_reference?: string | null
+          phone_number?: string | null
+          status?: string
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          payment_method?: string
+          payment_reference?: string | null
+          phone_number?: string | null
+          status?: string
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           description: string | null
@@ -387,6 +537,7 @@ export type Database = {
           description_es: string | null
           description_fr: string | null
           discount_percent: number | null
+          free_shipping: boolean | null
           id: string
           image_url: string | null
           images: string[] | null
@@ -410,6 +561,7 @@ export type Database = {
           description_es?: string | null
           description_fr?: string | null
           discount_percent?: number | null
+          free_shipping?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
@@ -433,6 +585,7 @@ export type Database = {
           description_es?: string | null
           description_fr?: string | null
           discount_percent?: number | null
+          free_shipping?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
@@ -704,6 +857,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_stats: {
+        Args: never
+        Returns: {
+          monthly_revenue: number
+          pending_orders: number
+          total_articles: number
+          total_orders: number
+          total_products: number
+          total_revenue: number
+          total_users: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
