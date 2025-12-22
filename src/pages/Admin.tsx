@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  X
+  X,
+  Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AdminDashboard from "@/components/admin/AdminDashboard";
 
 type TabType = "dashboard" | "products" | "categories" | "orders" | "users" | "articles" | "promotions" | "notifications";
 
@@ -142,7 +144,7 @@ const Admin = () => {
 
         {/* Main Content */}
         <div className="flex-1 p-6 lg:p-8 pb-24 lg:pb-8">
-          {activeTab === "dashboard" && <DashboardTab />}
+          {activeTab === "dashboard" && <AdminDashboard />}
           {activeTab === "products" && <ProductsTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "orders" && <OrdersTab />}
@@ -152,111 +154,6 @@ const Admin = () => {
         </div>
       </div>
     </main>
-  );
-};
-
-// Dashboard Tab
-const DashboardTab = () => {
-  const [stats, setStats] = useState({ products: 0, orders: 0, users: 0, revenue: 0 });
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    const [products, orders, users] = await Promise.all([
-      supabase.from("products").select("id", { count: "exact" }),
-      supabase.from("orders").select("total_amount"),
-      supabase.from("profiles").select("id", { count: "exact" }),
-    ]);
-
-    const revenue = orders.data?.reduce((acc, o) => acc + (o.total_amount || 0), 0) || 0;
-
-    setStats({
-      products: products.count || 0,
-      orders: orders.data?.length || 0,
-      users: users.count || 0,
-      revenue,
-    });
-  };
-
-  return (
-    <div>
-      <h1 className="text-2xl font-display font-bold text-foreground mb-8">Tableau de bord</h1>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Produits" value={stats.products} color="primary" />
-        <StatCard title="Commandes" value={stats.orders} color="secondary" />
-        <StatCard title="Utilisateurs" value={stats.users} color="accent" />
-        <StatCard title="Revenus" value={`${stats.revenue.toLocaleString()} FCFA`} color="primary" />
-      </div>
-
-      <div className="bg-card rounded-xl border border-border p-6">
-        <h2 className="text-lg font-semibold mb-4">Dernières commandes</h2>
-        <RecentOrders />
-      </div>
-    </div>
-  );
-};
-
-const StatCard = ({ title, value, color }: { title: string; value: string | number; color: string }) => (
-  <div className="bg-card rounded-xl border border-border p-6">
-    <p className="text-muted-foreground text-sm mb-2">{title}</p>
-    <p className={`text-3xl font-display font-bold text-${color}`}>{value}</p>
-  </div>
-);
-
-const RecentOrders = () => {
-  const [orders, setOrders] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
-    const { data } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(5);
-    setOrders(data || []);
-  };
-
-  const statusColors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800",
-    confirmed: "bg-blue-100 text-blue-800",
-    shipped: "bg-purple-100 text-purple-800",
-    delivered: "bg-green-100 text-green-800",
-    cancelled: "bg-red-100 text-red-800",
-  };
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">ID</th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Montant</th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Statut</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id} className="border-b border-border">
-              <td className="py-3 px-4 text-sm font-mono">{order.id.slice(0, 8)}...</td>
-              <td className="py-3 px-4 text-sm">{new Date(order.created_at).toLocaleDateString()}</td>
-              <td className="py-3 px-4 text-sm font-medium">{order.total_amount.toLocaleString()} FCFA</td>
-              <td className="py-3 px-4">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[order.status] || ""}`}>
-                  {order.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 };
 
