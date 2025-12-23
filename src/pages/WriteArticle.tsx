@@ -131,12 +131,12 @@ const WriteArticle = () => {
       <div className="container mx-auto px-4 py-24">
         <Button variant="ghost" className="mb-6" onClick={() => navigate('/journal')}>
           <ArrowLeft size={18} />
-          Retour au journal
+          Retour aux actualités
         </Button>
 
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-display font-bold text-foreground mb-2">Rédiger un article</h1>
-          <p className="text-muted-foreground mb-8">Partagez vos connaissances avec la communauté Scoly</p>
+          <h1 className="text-3xl font-display font-bold text-foreground mb-2">Publier un article</h1>
+          <p className="text-muted-foreground mb-8">Partagez vos idées et conseils avec la communauté Scoly</p>
 
           <div className="grid gap-8">
             {/* Main Content */}

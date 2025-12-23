@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, User, ShoppingCart, LogOut, Shield, Bell, Newspaper } from "lucide-react";
+import { Menu, X, User, ShoppingCart, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Logo from "./Logo";
 import LanguageSwitcher from "./LanguageSwitcher";
+import NotificationBell from "./NotificationBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -17,7 +18,7 @@ const Navbar = () => {
 
   const navItems = [
     { label: "Boutique", href: "/shop" },
-    { label: "Journal", href: "/journal" },
+    { label: "Actualités", href: "/journal" },
     { label: t.nav.about, href: "/about" },
     { label: t.nav.contact, href: "/contact" },
   ];
@@ -67,6 +68,7 @@ const Navbar = () => {
             </Link>
             {user ? (
               <>
+                <NotificationBell />
                 {isAdmin && (
                   <Link to="/admin">
                     <Button variant="ghost" size="icon" title="Administration">
