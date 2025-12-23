@@ -41,7 +41,7 @@ const HeroSection = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-8 animate-slide-up">
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             <span className="text-primary-foreground/90 text-sm font-medium">
-              Votre partenaire pour la réussite scolaire 🎓
+              Fournitures scolaires et bureautiques 📚
             </span>
           </div>
 
@@ -53,7 +53,7 @@ const HeroSection = () => {
 
           {/* Subheading */}
           <p className="text-lg sm:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 animate-slide-up animation-delay-200">
-            Scoly vous accompagne dans votre parcours éducatif avec des fournitures de qualité, livrées gratuitement partout en Côte d'Ivoire.
+            Votre référence en Côte d'Ivoire pour les fournitures scolaires et bureautiques de qualité, livrées gratuitement partout.
           </p>
 
           {/* CTA Buttons */}
@@ -67,7 +67,7 @@ const HeroSection = () => {
             <Link to="/journal">
               <Button variant="heroOutline" size="xl" className="w-full sm:w-auto">
                 <Newspaper size={20} />
-                Lire le Journal
+                Actualités
               </Button>
             </Link>
           </div>
@@ -106,8 +106,8 @@ const HeroSection = () => {
             />
             <FeatureCard
               icon={<Newspaper size={28} />}
-              title="Journal Scoly"
-              description="Articles et ressources éducatives"
+              title="Actualités Scoly"
+              description="Articles, guides et ressources"
               color="bg-accent/20"
               href="/journal"
             />

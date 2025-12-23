@@ -111,13 +111,13 @@ const Journal = () => {
           <div className="max-w-3xl mx-auto text-center text-primary-foreground">
             <div className="flex items-center justify-center gap-2 mb-4">
               <BookOpen size={32} />
-              <span className="text-lg font-medium">Journal Scoly</span>
+              <span className="text-lg font-medium">Actualités Scoly</span>
             </div>
             <h1 className="text-4xl lg:text-5xl font-display font-bold mb-6">
-              Journal scolaire et publications
+              Actualités & Publications
             </h1>
             <p className="text-xl opacity-90 mb-8">
-              Découvrez des articles, ouvrages et contenus éducatifs publiés par nos auteurs et enseignants
+              Découvrez nos articles, guides pratiques et conseils pour réussir à l'école et au bureau
             </p>
             
             {/* Search */}
@@ -173,9 +173,9 @@ const Journal = () => {
           ) : filteredArticles.length === 0 ? (
             <div className="text-center py-16">
               <BookOpen className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">Aucun article pour le moment</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Aucune publication pour le moment</h3>
               <p className="text-muted-foreground mb-6">
-                Soyez le premier à publier un article sur notre journal scolaire !
+                Soyez le premier à publier un article !
               </p>
               {user && (
                 <Link to="/journal/write">

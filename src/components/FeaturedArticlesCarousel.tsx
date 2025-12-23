@@ -92,10 +92,10 @@ const FeaturedArticlesCarousel = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-display font-bold text-foreground">
-              Articles populaires
+              Publications populaires
             </h2>
             <p className="text-muted-foreground mt-2">
-              Les publications les plus lues du Journal Scoly
+              Les articles les plus lus de Scoly
             </p>
           </div>
           <div className="flex gap-2">
@@ -187,7 +187,7 @@ const FeaturedArticlesCarousel = () => {
         <div className="text-center mt-8">
           <Link to="/journal">
             <Button variant="outline" size="lg">
-              Voir tous les articles
+              Voir toutes les actualités
             </Button>
           </Link>
         </div>

@@ -15,10 +15,10 @@ const SpacesSection = () => {
             Nos services
           </span>
           <h2 className="text-3xl lg:text-5xl font-display font-bold text-foreground mb-4">
-            Tout pour votre réussite scolaire
+            Tout pour l'école et le bureau
           </h2>
           <p className="text-lg text-muted-foreground">
-            Scoly vous offre des produits de qualité et des ressources éducatives pour accompagner votre parcours
+            Scoly vous offre des fournitures scolaires et bureautiques de qualité pour accompagner votre réussite
           </p>
         </div>
 
@@ -29,8 +29,8 @@ const SpacesSection = () => {
             id="boutique"
             icon={<ShoppingBag size={32} />}
             title="Boutique Scoly"
-            subtitle="Fournitures scolaires"
-            description="Retrouvez toutes vos fournitures scolaires et bureautiques organisées par niveau : Primaire, Secondaire, Université et plus encore."
+            subtitle="Scolaire & Bureautique"
+            description="Retrouvez toutes vos fournitures scolaires et bureautiques : cahiers, stylos, classeurs, accessoires de bureau et bien plus encore."
             features={[
               { icon: <Package size={18} />, text: "Catalogue complet" },
               { icon: <Truck size={18} />, text: "Livraison gratuite" },
@@ -60,19 +60,19 @@ const SpacesSection = () => {
             href="/shop"
           />
 
-          {/* Journal Scoly */}
+          {/* Actualités Scoly */}
           <SpaceCard
-            id="journal"
+            id="actualites"
             icon={<Newspaper size={32} />}
-            title="Journal Scoly"
-            subtitle="Articles et Publications"
-            description="Lisez et découvrez des articles éducatifs, des ressources pédagogiques et des guides pour accompagner votre apprentissage."
+            title="Actualités Scoly"
+            subtitle="Articles & Publications"
+            description="Restez informé avec nos articles, conseils pratiques et guides pour réussir à l'école comme au bureau."
             features={[
               { icon: <PenTool size={18} />, text: "Articles de qualité" },
-              { icon: <BookOpen size={18} />, text: "Contenus éducatifs" },
-              { icon: <Star size={18} />, text: "Ressources gratuites" },
+              { icon: <BookOpen size={18} />, text: "Conseils pratiques" },
+              { icon: <Star size={18} />, text: "Guides gratuits" },
             ]}
-            stats={{ value: "100+", label: "Articles" }}
+            stats={{ value: "100+", label: "Publications" }}
             gradient="from-accent to-yellow-400"
             buttonVariant="accent"
             href="/journal"

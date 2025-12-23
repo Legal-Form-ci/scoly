@@ -62,7 +62,7 @@ const Logo = ({ variant = "default", size = "md", showSlogan = false }: LogoProp
       {/* Slogan below logo - compact and aligned */}
       {showSlogan && (
         <span className={`${sloganSizes[size]} ${variant === "white" ? "text-primary-foreground/80" : "text-muted-foreground"} mt-0.5 font-medium tracking-tight whitespace-nowrap`}>
-          Fournitures scolaires et bureautiques en un clic
+          Scolaire & Bureautique - Livraison gratuite
         </span>
       )}
     </div>
