@@ -16,15 +16,48 @@ interface PaymentRequest {
   customerName?: string;
 }
 
-// Map payment methods to FedaPay mode
-const getFedaPayMode = (method: string): string => {
-  const modes: Record<string, string> = {
-    'mtn': 'mtn',
+// Map payment methods to FedaPay mode for different countries
+const getFedaPayMode = (method: string, country: string = 'ci'): string => {
+  // Côte d'Ivoire modes
+  const ciModes: Record<string, string> = {
+    'mtn': 'mtn_ci',
+    'moov': 'moov_ci',
+    'orange': 'orange_ci',
+    'wave': 'wave_ci'
+  };
+  
+  // Bénin modes
+  const bjModes: Record<string, string> = {
+    'mtn': 'mtn_open',
     'moov': 'moov',
-    'orange': 'orange', // Note: FedaPay may not support Orange Money in all regions
+    'orange': 'orange', // Not supported in Benin
     'wave': 'wave'
   };
-  return modes[method] || 'mtn';
+  
+  // Sénégal modes
+  const snModes: Record<string, string> = {
+    'orange': 'orange_sn',
+    'wave': 'wave_sn'
+  };
+  
+  const modesByCountry: Record<string, Record<string, string>> = {
+    'ci': ciModes,
+    'bj': bjModes,
+    'sn': snModes
+  };
+  
+  return modesByCountry[country]?.[method] || ciModes[method] || 'mtn_ci';
+};
+
+// Detect country from phone number
+const detectCountry = (phone: string): string => {
+  const cleanPhone = phone.replace(/\s/g, '').replace(/^\+/, '');
+  if (cleanPhone.startsWith('225')) return 'ci'; // Côte d'Ivoire
+  if (cleanPhone.startsWith('229')) return 'bj'; // Bénin
+  if (cleanPhone.startsWith('221')) return 'sn'; // Sénégal
+  if (cleanPhone.startsWith('228')) return 'tg'; // Togo
+  if (cleanPhone.startsWith('226')) return 'bf'; // Burkina Faso
+  return 'ci'; // Default to Côte d'Ivoire
 };
 
 serve(async (req) => {
@@ -145,6 +178,13 @@ serve(async (req) => {
     }
 
     try {
+      const detectedCountry = detectCountry(phoneNumber);
+      const cleanPhoneNumber = phoneNumber.replace(/\s/g, '').replace(/^\+/, '');
+      // Remove country code for local number
+      const localPhone = cleanPhoneNumber.replace(/^(225|229|221|228|226)/, '');
+      
+      console.log('Detected country:', detectedCountry, 'Local phone:', localPhone);
+      
       // Create FedaPay transaction
       const fedapayResponse = await fetch('https://api.fedapay.com/v1/transactions', {
         method: 'POST',
@@ -162,14 +202,16 @@ serve(async (req) => {
             lastname: customerName?.split(' ').slice(1).join(' ') || 'Scoly',
             email: customerEmail || 'client@scoly.com',
             phone_number: {
-              number: phoneNumber.replace(/\s/g, '').replace(/^\+/, ''),
-              country: 'bj' // Bénin par défaut, adapter selon le pays
+              number: localPhone,
+              country: detectedCountry
             }
           },
           metadata: {
             order_id: orderId,
             payment_id: payment.id,
-            user_id: userId
+            user_id: userId,
+            payment_method: paymentMethod,
+            country: detectedCountry
           }
         })
       });

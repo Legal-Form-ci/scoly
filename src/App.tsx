@@ -19,6 +19,8 @@ import Admin from "./pages/Admin";
 import ProductDetail from "./pages/ProductDetail";
 import Journal from "./pages/Journal";
 import WriteArticle from "./pages/WriteArticle";
+import TeamDashboard from "./pages/TeamDashboard";
+import AuthorDashboard from "./pages/AuthorDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +49,8 @@ const App = () => (
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/journal" element={<Journal />} />
                 <Route path="/journal/write" element={<WriteArticle />} />
+                <Route path="/team" element={<TeamDashboard />} />
+                <Route path="/author" element={<AuthorDashboard />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
