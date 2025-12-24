@@ -182,7 +182,9 @@ const Checkout = () => {
       total,
       selectedPayment as PaymentMethod,
       formData.phone,
-      user.id
+      user.id,
+      formData.email,
+      `${formData.firstName} ${formData.lastName}`
     );
 
     if (result.success && result.paymentId) {

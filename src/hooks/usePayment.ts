@@ -32,7 +32,9 @@ export const usePayment = () => {
     amount: number,
     paymentMethod: PaymentMethod,
     phoneNumber: string,
-    userId: string
+    userId: string,
+    customerEmail?: string,
+    customerName?: string
   ): Promise<PaymentResult> => {
     setLoading(true);
     setPaymentStatus('processing');
@@ -44,7 +46,9 @@ export const usePayment = () => {
           amount,
           paymentMethod,
           phoneNumber,
-          userId
+          userId,
+          customerEmail,
+          customerName
         }
       });
 
