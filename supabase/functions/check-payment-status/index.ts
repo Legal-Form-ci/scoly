@@ -15,6 +15,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const fedapaySecretKey = Deno.env.get('FEDAPAY_SECRET_KEY');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -24,7 +25,7 @@ serve(async (req) => {
 
     let query = supabase
       .from('payments')
-      .select('id, status, transaction_id, payment_method, amount, created_at, completed_at, metadata');
+      .select('id, status, transaction_id, payment_reference, payment_method, amount, created_at, completed_at, metadata');
 
     if (paymentId) {
       query = query.eq('id', paymentId);
@@ -47,45 +48,92 @@ serve(async (req) => {
       );
     }
 
-    // Simulate checking with provider for pending payments
-    // In production, this would call the actual payment provider API
-    if (payment.status === 'pending' || payment.status === 'processing') {
-      // Simulate a check - in production, call the provider's API
-      const timeSinceCreation = Date.now() - new Date(payment.created_at).getTime();
+    // If payment is still pending/processing and we have FedaPay credentials, check with FedaPay
+    if ((payment.status === 'pending' || payment.status === 'processing') && fedapaySecretKey) {
+      const fedapayTransactionId = payment.payment_reference || payment.metadata?.fedapay_transaction_id;
       
-      // Auto-confirm after 30 seconds for demo purposes
-      if (timeSinceCreation > 30000) {
-        const newStatus = Math.random() > 0.1 ? 'completed' : 'failed';
-        
-        await supabase
-          .from('payments')
-          .update({
-            status: newStatus,
-            completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
-            metadata: {
-              ...payment.metadata,
-              auto_confirmed_at: new Date().toISOString()
+      if (fedapayTransactionId) {
+        try {
+          const fedapayResponse = await fetch(`https://api.fedapay.com/v1/transactions/${fedapayTransactionId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${fedapaySecretKey}`,
+              'Content-Type': 'application/json',
             }
-          })
-          .eq('id', payment.id);
+          });
 
-        if (newStatus === 'completed') {
-          // Update order status
-          const { data: paymentData } = await supabase
-            .from('payments')
-            .select('order_id')
-            .eq('id', payment.id)
-            .single();
+          if (fedapayResponse.ok) {
+            const fedapayData = await fedapayResponse.json();
+            console.log('FedaPay transaction status:', fedapayData);
 
-          if (paymentData?.order_id) {
-            await supabase
-              .from('orders')
-              .update({ status: 'confirmed' })
-              .eq('id', paymentData.order_id);
+            const fedapayStatus = fedapayData.v1?.transaction?.status || fedapayData.status;
+            
+            // Map FedaPay status to our status
+            let newStatus = payment.status;
+            if (fedapayStatus === 'approved' || fedapayStatus === 'transferred') {
+              newStatus = 'completed';
+            } else if (fedapayStatus === 'declined' || fedapayStatus === 'cancelled' || fedapayStatus === 'refunded') {
+              newStatus = 'failed';
+            }
+
+            // Update if status changed
+            if (newStatus !== payment.status) {
+              const updateData: Record<string, unknown> = {
+                status: newStatus,
+                metadata: {
+                  ...payment.metadata,
+                  fedapay_status_check: fedapayStatus,
+                  last_checked_at: new Date().toISOString()
+                }
+              };
+
+              if (newStatus === 'completed') {
+                updateData.completed_at = new Date().toISOString();
+              }
+
+              await supabase
+                .from('payments')
+                .update(updateData)
+                .eq('id', payment.id);
+
+              // Update order if completed
+              if (newStatus === 'completed') {
+                const { data: paymentData } = await supabase
+                  .from('payments')
+                  .select('order_id, user_id, amount')
+                  .eq('id', payment.id)
+                  .single();
+
+                if (paymentData?.order_id) {
+                  await supabase
+                    .from('orders')
+                    .update({ status: 'confirmed' })
+                    .eq('id', paymentData.order_id);
+
+                  // Create notification for user
+                  if (paymentData.user_id) {
+                    await supabase.from('notifications').insert({
+                      user_id: paymentData.user_id,
+                      type: 'payment',
+                      title: 'Paiement réussi',
+                      message: `Votre paiement de ${paymentData.amount} FCFA a été confirmé.`,
+                      data: {
+                        payment_id: payment.id,
+                        order_id: paymentData.order_id,
+                        amount: paymentData.amount
+                      }
+                    });
+                  }
+                }
+              }
+
+              payment.status = newStatus;
+            }
           }
+        } catch (fedapayError) {
+          console.error('Error checking FedaPay status:', fedapayError);
+          // Continue with local status
         }
-
-        payment.status = newStatus;
       }
     }
 
@@ -101,7 +149,8 @@ serve(async (req) => {
           paymentMethod: payment.payment_method,
           amount: payment.amount,
           createdAt: payment.created_at,
-          completedAt: payment.completed_at
+          completedAt: payment.completed_at,
+          paymentUrl: payment.metadata?.payment_url
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

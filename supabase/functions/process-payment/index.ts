@@ -12,40 +12,19 @@ interface PaymentRequest {
   paymentMethod: 'orange' | 'mtn' | 'moov' | 'wave';
   phoneNumber: string;
   userId: string;
+  customerEmail?: string;
+  customerName?: string;
 }
 
-// Simulate payment provider response
-// In production, replace with actual API calls to Orange Money, MTN, Moov, Wave APIs
-const processWithProvider = async (
-  provider: string,
-  phoneNumber: string,
-  amount: number
-): Promise<{ success: boolean; transactionId: string; message: string }> => {
-  console.log(`Processing ${provider} payment for ${phoneNumber}, amount: ${amount}`);
-  
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Generate mock transaction ID
-  const transactionId = `${provider.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
-  // Simulate success (in production, this would be the actual API response)
-  // For demo purposes, we'll simulate a 95% success rate
-  const isSuccess = Math.random() > 0.05;
-  
-  if (isSuccess) {
-    return {
-      success: true,
-      transactionId,
-      message: `Paiement ${provider} initié. Veuillez confirmer sur votre téléphone.`
-    };
-  } else {
-    return {
-      success: false,
-      transactionId: '',
-      message: `Échec du paiement ${provider}. Veuillez réessayer.`
-    };
-  }
+// Map payment methods to FedaPay mode
+const getFedaPayMode = (method: string): string => {
+  const modes: Record<string, string> = {
+    'mtn': 'mtn',
+    'moov': 'moov',
+    'orange': 'orange', // Note: FedaPay may not support Orange Money in all regions
+    'wave': 'wave'
+  };
+  return modes[method] || 'mtn';
 };
 
 serve(async (req) => {
@@ -57,10 +36,11 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const fedapaySecretKey = Deno.env.get('FEDAPAY_SECRET_KEY');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { orderId, amount, paymentMethod, phoneNumber, userId }: PaymentRequest = await req.json();
+    const { orderId, amount, paymentMethod, phoneNumber, userId, customerEmail, customerName }: PaymentRequest = await req.json();
 
     console.log('Payment request received:', { orderId, amount, paymentMethod, phoneNumber, userId });
 
@@ -72,8 +52,8 @@ serve(async (req) => {
       );
     }
 
-    // Validate phone number format (Côte d'Ivoire format)
-    const phoneRegex = /^(\+225)?[0-9]{10}$/;
+    // Validate phone number format (Côte d'Ivoire / Bénin format)
+    const phoneRegex = /^(\+229|\+225)?[0-9]{8,10}$/;
     if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
       return new Response(
         JSON.stringify({ error: 'Numéro de téléphone invalide' }),
@@ -115,7 +95,9 @@ serve(async (req) => {
         status: 'processing',
         metadata: {
           initiated_at: new Date().toISOString(),
-          provider: paymentMethod
+          provider: 'fedapay',
+          customer_email: customerEmail,
+          customer_name: customerName
         }
       })
       .select()
@@ -129,20 +111,127 @@ serve(async (req) => {
       );
     }
 
-    // Process payment with provider
-    const providerResult = await processWithProvider(paymentMethod, phoneNumber, amount);
-
-    if (providerResult.success) {
-      // Update payment with transaction ID
+    // Process with FedaPay
+    if (!fedapaySecretKey) {
+      console.error('FedaPay secret key not configured');
+      
+      // Fallback to simulation mode if no API key
+      const transactionId = `SIM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
       await supabase
         .from('payments')
         .update({
-          transaction_id: providerResult.transactionId,
-          status: 'pending', // Waiting for user confirmation
+          transaction_id: transactionId,
+          status: 'pending',
           metadata: {
             initiated_at: new Date().toISOString(),
-            provider: paymentMethod,
-            provider_response: providerResult
+            provider: 'simulation',
+            note: 'Mode simulation - Clé FedaPay non configurée'
+          }
+        })
+        .eq('id', payment.id);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          paymentId: payment.id,
+          transactionId,
+          message: 'Mode simulation - Paiement initié. Veuillez confirmer sur votre téléphone.',
+          status: 'pending',
+          simulation: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    try {
+      // Create FedaPay transaction
+      const fedapayResponse = await fetch('https://api.fedapay.com/v1/transactions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${fedapaySecretKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description: `Commande Scoly #${orderId.slice(0, 8)}`,
+          amount: Math.round(amount),
+          currency: { iso: 'XOF' },
+          callback_url: `${supabaseUrl}/functions/v1/fedapay-webhook`,
+          customer: {
+            firstname: customerName?.split(' ')[0] || 'Client',
+            lastname: customerName?.split(' ').slice(1).join(' ') || 'Scoly',
+            email: customerEmail || 'client@scoly.com',
+            phone_number: {
+              number: phoneNumber.replace(/\s/g, '').replace(/^\+/, ''),
+              country: 'bj' // Bénin par défaut, adapter selon le pays
+            }
+          },
+          metadata: {
+            order_id: orderId,
+            payment_id: payment.id,
+            user_id: userId
+          }
+        })
+      });
+
+      const fedapayData = await fedapayResponse.json();
+      console.log('FedaPay response:', fedapayData);
+
+      if (!fedapayResponse.ok) {
+        console.error('FedaPay error:', fedapayData);
+        
+        await supabase
+          .from('payments')
+          .update({
+            status: 'failed',
+            metadata: {
+              initiated_at: new Date().toISOString(),
+              provider: 'fedapay',
+              error: fedapayData
+            }
+          })
+          .eq('id', payment.id);
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            paymentId: payment.id,
+            message: fedapayData.message || 'Erreur lors de la création du paiement FedaPay',
+            status: 'failed'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const transactionId = fedapayData.v1?.transaction?.id?.toString() || fedapayData.id?.toString();
+      const transactionReference = fedapayData.v1?.transaction?.reference || fedapayData.reference;
+
+      // Now request payment via Mobile Money
+      const paymentModeResponse = await fetch(`https://api.fedapay.com/v1/transactions/${transactionId}/token`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${fedapaySecretKey}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const tokenData = await paymentModeResponse.json();
+      console.log('FedaPay token response:', tokenData);
+
+      // Update payment with FedaPay transaction ID
+      await supabase
+        .from('payments')
+        .update({
+          transaction_id: transactionReference || transactionId,
+          payment_reference: transactionId,
+          status: 'pending',
+          metadata: {
+            initiated_at: new Date().toISOString(),
+            provider: 'fedapay',
+            fedapay_transaction_id: transactionId,
+            fedapay_reference: transactionReference,
+            fedapay_token: tokenData.token,
+            payment_url: tokenData.url
           }
         })
         .eq('id', payment.id);
@@ -151,32 +240,35 @@ serve(async (req) => {
       await supabase
         .from('orders')
         .update({
-          payment_reference: providerResult.transactionId
+          payment_reference: transactionReference || transactionId
         })
         .eq('id', orderId);
 
-      console.log('Payment initiated successfully:', providerResult.transactionId);
+      console.log('Payment initiated successfully with FedaPay:', transactionId);
 
       return new Response(
         JSON.stringify({
           success: true,
           paymentId: payment.id,
-          transactionId: providerResult.transactionId,
-          message: providerResult.message,
-          status: 'pending'
+          transactionId: transactionReference || transactionId,
+          message: 'Paiement initié. Vous allez recevoir une demande de confirmation sur votre téléphone.',
+          status: 'pending',
+          paymentUrl: tokenData.url // URL pour paiement via navigateur si nécessaire
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    } else {
-      // Update payment as failed
+
+    } catch (fedapayError) {
+      console.error('FedaPay API error:', fedapayError);
+      
       await supabase
         .from('payments')
         .update({
           status: 'failed',
           metadata: {
             initiated_at: new Date().toISOString(),
-            provider: paymentMethod,
-            error: providerResult.message
+            provider: 'fedapay',
+            error: fedapayError instanceof Error ? fedapayError.message : 'Unknown error'
           }
         })
         .eq('id', payment.id);
@@ -185,12 +277,13 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           paymentId: payment.id,
-          message: providerResult.message,
+          message: 'Erreur de connexion avec FedaPay',
           status: 'failed'
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
   } catch (error) {
     console.error('Error processing payment:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
