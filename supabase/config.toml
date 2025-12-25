@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.fedapay-webhook]
 verify_jwt = false
+
+[functions.send-article-notification]
+verify_jwt = true

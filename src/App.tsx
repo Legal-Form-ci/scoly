@@ -21,6 +21,9 @@ import Journal from "./pages/Journal";
 import WriteArticle from "./pages/WriteArticle";
 import TeamDashboard from "./pages/TeamDashboard";
 import AuthorDashboard from "./pages/AuthorDashboard";
+import FAQ from "./pages/FAQ";
+import ArticlePayment from "./pages/ArticlePayment";
+import ScIA from "./components/ScIA";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,8 +54,11 @@ const App = () => (
                 <Route path="/journal/write" element={<WriteArticle />} />
                 <Route path="/team" element={<TeamDashboard />} />
                 <Route path="/author" element={<AuthorDashboard />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/article/pay/:id" element={<ArticlePayment />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <ScIA />
             </BrowserRouter>
           </TooltipProvider>
         </CartProvider>

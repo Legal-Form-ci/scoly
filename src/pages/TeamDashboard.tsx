@@ -122,7 +122,7 @@ const TeamDashboard = () => {
       })
       .eq("id", id);
     
-    // Notify author
+    // Notify author via in-app notification
     const article = articles.find(a => a.id === id);
     if (article?.author_id) {
       await supabase.from("notifications").insert({
@@ -132,6 +132,11 @@ const TeamDashboard = () => {
         message: `Votre article "${article.title_fr}" a été approuvé et publié.`,
         data: { article_id: id }
       });
+
+      // Send email notification
+      supabase.functions.invoke("send-article-notification", {
+        body: { articleId: id, status: "approved" }
+      }).catch(console.error);
     }
 
     toast.success("Article approuvé et publié");
@@ -142,7 +147,7 @@ const TeamDashboard = () => {
   const rejectArticle = async (id: string) => {
     await supabase
       .from("articles")
-      .update({ status: "rejected" })
+      .update({ status: "rejected", rejection_reason: reviewNote })
       .eq("id", id);
     
     const article = articles.find(a => a.id === id);
@@ -154,6 +159,11 @@ const TeamDashboard = () => {
         message: `Votre article "${article.title_fr}" a été refusé. ${reviewNote ? `Raison: ${reviewNote}` : ''}`,
         data: { article_id: id, reason: reviewNote }
       });
+
+      // Send email notification
+      supabase.functions.invoke("send-article-notification", {
+        body: { articleId: id, status: "rejected", reason: reviewNote }
+      }).catch(console.error);
     }
 
     toast.success("Article refusé");
