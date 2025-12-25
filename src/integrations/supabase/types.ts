@@ -78,6 +78,54 @@ export type Database = {
           },
         ]
       }
+      article_purchases: {
+        Row: {
+          amount: number
+          article_id: string
+          created_at: string | null
+          id: string
+          payment_id: string | null
+          purchased_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          article_id: string
+          created_at?: string | null
+          id?: string
+          payment_id?: string | null
+          purchased_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          article_id?: string
+          created_at?: string | null
+          id?: string
+          payment_id?: string | null
+          purchased_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_purchases_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_purchases_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           author_id: string
@@ -97,6 +145,7 @@ export type Database = {
           likes: number | null
           price: number | null
           published_at: string | null
+          rejection_reason: string | null
           status: string
           title_de: string
           title_en: string
@@ -123,6 +172,7 @@ export type Database = {
           likes?: number | null
           price?: number | null
           published_at?: string | null
+          rejection_reason?: string | null
           status?: string
           title_de: string
           title_en: string
@@ -149,6 +199,7 @@ export type Database = {
           likes?: number | null
           price?: number | null
           published_at?: string | null
+          rejection_reason?: string | null
           status?: string
           title_de?: string
           title_en?: string
@@ -156,6 +207,48 @@ export type Database = {
           title_fr?: string
           updated_at?: string | null
           views?: number | null
+        }
+        Relationships: []
+      }
+      campaigns: {
+        Row: {
+          clicks: number | null
+          content: Json | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          impressions: number | null
+          is_active: boolean | null
+          name: string
+          start_date: string | null
+          target_audience: string | null
+          type: string
+        }
+        Insert: {
+          clicks?: number | null
+          content?: Json | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          impressions?: number | null
+          is_active?: boolean | null
+          name: string
+          start_date?: string | null
+          target_audience?: string | null
+          type?: string
+        }
+        Update: {
+          clicks?: number | null
+          content?: Json | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          impressions?: number | null
+          is_active?: boolean | null
+          name?: string
+          start_date?: string | null
+          target_audience?: string | null
+          type?: string
         }
         Relationships: []
       }
@@ -328,6 +421,42 @@ export type Database = {
           used_count?: number | null
           valid_from?: string | null
           valid_until?: string | null
+        }
+        Relationships: []
+      }
+      faq: {
+        Row: {
+          answer_en: string | null
+          answer_fr: string
+          category: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          question_en: string | null
+          question_fr: string
+          sort_order: number | null
+        }
+        Insert: {
+          answer_en?: string | null
+          answer_fr: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          question_en?: string | null
+          question_fr: string
+          sort_order?: number | null
+        }
+        Update: {
+          answer_en?: string | null
+          answer_fr?: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          question_en?: string | null
+          question_fr?: string
+          sort_order?: number | null
         }
         Relationships: []
       }
@@ -641,6 +770,54 @@ export type Database = {
           phone?: string | null
           preferred_language?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          applies_to: string | null
+          created_at: string | null
+          current_uses: number | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_amount: number | null
+          name: string
+          start_date: string | null
+        }
+        Insert: {
+          applies_to?: string | null
+          created_at?: string | null
+          current_uses?: number | null
+          description?: string | null
+          discount_type?: string
+          discount_value: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_amount?: number | null
+          name: string
+          start_date?: string | null
+        }
+        Update: {
+          applies_to?: string | null
+          created_at?: string | null
+          current_uses?: number | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_amount?: number | null
+          name?: string
+          start_date?: string | null
         }
         Relationships: []
       }
