@@ -6,13 +6,13 @@ import { useLanguage } from "@/i18n/LanguageContext";
 const HeroSection = () => {
   const { t } = useLanguage();
   
-  // Scoly categories
+  // Izy-scoly categories
   const scolyCategories = [
-    { name: "Scoly Primaire", slug: "scoly-primaire", color: "bg-green-500/20" },
-    { name: "Scoly Secondaire", slug: "scoly-secondaire", color: "bg-blue-500/20" },
-    { name: "Scoly Université", slug: "scoly-universite", color: "bg-purple-500/20" },
-    { name: "Scoly Bureautique", slug: "scoly-bureautique", color: "bg-orange-500/20" },
-    { name: "Scoly Librairie", slug: "scoly-librairie", color: "bg-red-500/20" },
+    { name: "Izy-scoly Primaire", slug: "scoly-primaire", color: "bg-green-500/20" },
+    { name: "Izy-scoly Secondaire", slug: "scoly-secondaire", color: "bg-blue-500/20" },
+    { name: "Izy-scoly Université", slug: "scoly-universite", color: "bg-purple-500/20" },
+    { name: "Izy-scoly Bureautique", slug: "scoly-bureautique", color: "bg-orange-500/20" },
+    { name: "Izy-scoly Librairie", slug: "scoly-librairie", color: "bg-red-500/20" },
   ];
 
   return (
@@ -52,7 +52,7 @@ const HeroSection = () => {
           </h1>
 
           {/* Subheading */}
-          <p className="text-lg sm:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 animate-slide-up animation-delay-200">
+          <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-2xl mx-auto mb-10 animate-slide-up animation-delay-200 leading-relaxed">
             Votre référence en Côte d'Ivoire pour les fournitures scolaires et bureautiques de qualité, livrées gratuitement partout.
           </p>
 
@@ -64,7 +64,7 @@ const HeroSection = () => {
                 Découvrir nos produits
               </Button>
             </Link>
-            <Link to="/journal">
+            <Link to="/actualites">
               <Button variant="heroOutline" size="xl" className="w-full sm:w-auto">
                 <Newspaper size={20} />
                 Actualités
@@ -72,9 +72,9 @@ const HeroSection = () => {
             </Link>
           </div>
 
-          {/* Scoly Categories - Quick access */}
+          {/* Categories - Quick access */}
           <div className="mb-12 animate-slide-up animation-delay-400">
-            <p className="text-primary-foreground/60 text-sm mb-4">Parcourir par catégorie :</p>
+            <p className="text-primary-foreground/70 text-sm mb-4">Parcourir par catégorie :</p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               {scolyCategories.map((category) => (
                 <Link
@@ -106,10 +106,10 @@ const HeroSection = () => {
             />
             <FeatureCard
               icon={<Newspaper size={28} />}
-              title="Actualités Scoly"
+              title="Actualités Izy-scoly"
               description="Articles, guides et ressources"
               color="bg-accent/20"
-              href="/journal"
+              href="/actualites"
             />
           </div>
         </div>
@@ -147,7 +147,7 @@ const FeatureCard = ({ icon, title, description, color, href }: FeatureCardProps
           {icon}
         </div>
         <h3 className="text-lg font-display font-semibold text-primary-foreground">{title}</h3>
-        <p className="text-sm text-primary-foreground/70">{description}</p>
+        <p className="text-sm text-primary-foreground/80">{description}</p>
       </div>
       <ArrowRight 
         size={18} 

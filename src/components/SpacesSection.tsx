@@ -17,8 +17,8 @@ const SpacesSection = () => {
           <h2 className="text-3xl lg:text-5xl font-display font-bold text-foreground mb-4">
             Tout pour l'école et le bureau
           </h2>
-          <p className="text-lg text-muted-foreground">
-            Scoly vous offre des fournitures scolaires et bureautiques de qualité pour accompagner votre réussite
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Izy-scoly vous offre des fournitures scolaires et bureautiques de qualité pour accompagner votre réussite
           </p>
         </div>
 
@@ -28,7 +28,7 @@ const SpacesSection = () => {
           <SpaceCard
             id="boutique"
             icon={<ShoppingBag size={32} />}
-            title="Boutique Scoly"
+            title="Boutique Izy-scoly"
             subtitle="Scolaire & Bureautique"
             description="Retrouvez toutes vos fournitures scolaires et bureautiques : cahiers, stylos, classeurs, accessoires de bureau et bien plus encore."
             features={[
@@ -60,22 +60,22 @@ const SpacesSection = () => {
             href="/shop"
           />
 
-          {/* Actualités Scoly */}
+          {/* Actualités */}
           <SpaceCard
             id="actualites"
             icon={<Newspaper size={32} />}
-            title="Actualités Scoly"
+            title="Actualités Izy-scoly"
             subtitle="Articles & Publications"
-            description="Restez informé avec nos articles, conseils pratiques et guides pour réussir à l'école comme au bureau."
+            description="Restez informé avec nos articles sur l'éducation, les résultats d'examens, les taux de réussite scolaire et les conseils pratiques."
             features={[
               { icon: <PenTool size={18} />, text: "Articles de qualité" },
-              { icon: <BookOpen size={18} />, text: "Conseils pratiques" },
+              { icon: <BookOpen size={18} />, text: "Résultats scolaires" },
               { icon: <Star size={18} />, text: "Guides gratuits" },
             ]}
             stats={{ value: "100+", label: "Publications" }}
             gradient="from-accent to-yellow-400"
             buttonVariant="accent"
-            href="/journal"
+            href="/actualites"
           />
         </div>
       </div>
@@ -114,19 +114,19 @@ const SpaceCard = ({ id, icon, title, subtitle, description, features, stats, gr
           <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-sm text-white mb-2">
             {icon}
           </div>
-          <span className="text-white/80 text-sm">{subtitle}</span>
+          <span className="text-white/90 text-sm font-medium">{subtitle}</span>
         </div>
       </div>
 
       {/* Content */}
       <div className="p-6">
         <h3 className="text-xl font-display font-bold text-foreground mb-2">{title}</h3>
-        <p className="text-muted-foreground mb-6">{description}</p>
+        <p className="text-muted-foreground mb-6 leading-relaxed">{description}</p>
 
         {/* Features */}
         <ul className="space-y-3 mb-6">
           {features.map((feature, index) => (
-            <li key={index} className="flex items-center gap-3 text-sm text-foreground/80">
+            <li key={index} className="flex items-center gap-3 text-sm text-foreground">
               <span className="text-primary">{feature.icon}</span>
               {feature.text}
             </li>

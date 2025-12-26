@@ -8,15 +8,15 @@ interface LogoProps {
 
 const Logo = ({ variant = "default", size = "md", showSlogan = false }: LogoProps) => {
   const sizeClasses = {
-    sm: "text-xl",
-    md: "text-2xl",
-    lg: "text-3xl",
+    sm: "text-lg",
+    md: "text-xl",
+    lg: "text-2xl",
   };
 
   const iconSizes = {
-    sm: 18,
-    md: 24,
-    lg: 32,
+    sm: 16,
+    md: 20,
+    lg: 28,
   };
 
   const sloganSizes = {
@@ -54,7 +54,7 @@ const Logo = ({ variant = "default", size = "md", showSlogan = false }: LogoProp
         {/* Logo Text */}
         <div className="flex flex-col leading-none">
           <span className={`font-display font-bold ${sizeClasses[size]} ${colorClasses[variant]}`}>
-            Scoly
+            Izy-scoly
           </span>
         </div>
       </div>

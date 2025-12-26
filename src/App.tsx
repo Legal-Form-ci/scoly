@@ -17,7 +17,7 @@ import Contact from "./pages/Contact";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import ProductDetail from "./pages/ProductDetail";
-import Journal from "./pages/Journal";
+import Actualites from "./pages/Actualites";
 import WriteArticle from "./pages/WriteArticle";
 import TeamDashboard from "./pages/TeamDashboard";
 import AuthorDashboard from "./pages/AuthorDashboard";
@@ -50,8 +50,8 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/admin" element={<Admin />} />
-                <Route path="/journal" element={<Journal />} />
-                <Route path="/journal/write" element={<WriteArticle />} />
+                <Route path="/actualites" element={<Actualites />} />
+                <Route path="/actualites/write" element={<WriteArticle />} />
                 <Route path="/team" element={<TeamDashboard />} />
                 <Route path="/author" element={<AuthorDashboard />} />
                 <Route path="/faq" element={<FAQ />} />
