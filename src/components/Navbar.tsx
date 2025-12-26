@@ -1,24 +1,24 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, User, ShoppingCart, LogOut, Shield } from "lucide-react";
+import { Menu, X, ShoppingCart, User, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Logo from "./Logo";
-import LanguageSwitcher from "./LanguageSwitcher";
-import NotificationBell from "./NotificationBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import Logo from "./Logo";
+import LanguageSwitcher from "./LanguageSwitcher";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { t } = useLanguage();
   const { user, signOut, isAdmin } = useAuth();
-  const { itemCount } = useCart();
+  const { itemCount: cartCount } = useCart();
   const navigate = useNavigate();
 
   const navItems = [
     { label: "Boutique", href: "/shop" },
-    { label: "Actualités", href: "/journal" },
+    { label: "Actualités", href: "/actualites" },
     { label: t.nav.about, href: "/about" },
     { label: t.nav.contact, href: "/contact" },
   ];
@@ -29,108 +29,147 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 lg:h-20">
-          {/* Logo with slogan */}
-          <Link to="/" className="flex items-center gap-2">
-            <Logo showSlogan />
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center">
+            <Logo showSlogan={false} />
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-8">
             {navItems.map((item) => (
-              <Link 
-                key={item.label} 
-                to={item.href} 
-                className="flex items-center gap-1 px-4 py-2 text-foreground/80 hover:text-primary font-medium transition-colors rounded-lg hover:bg-muted"
+              <Link
+                key={item.href}
+                to={item.href}
+                className="text-foreground/80 hover:text-primary font-medium transition-colors"
               >
                 {item.label}
               </Link>
             ))}
           </div>
 
-          {/* Right Actions */}
-          <div className="hidden lg:flex items-center gap-2">
+          {/* Right Section */}
+          <div className="flex items-center gap-3">
             <LanguageSwitcher />
             
-            <div className="w-px h-6 bg-border mx-2" />
-            
-            <Link to="/cart">
+            {/* Cart */}
+            <Link to="/cart" className="relative">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart size={20} />
-                {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                    {itemCount}
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                    {cartCount}
                   </span>
                 )}
               </Button>
             </Link>
+
             {user ? (
               <>
                 <NotificationBell />
-                {isAdmin && (
-                  <Link to="/admin">
-                    <Button variant="ghost" size="icon" title="Administration">
-                      <Shield size={18} />
+                <div className="hidden sm:flex items-center gap-2">
+                  {isAdmin && (
+                    <Link to="/admin">
+                      <Button variant="outline" size="sm">
+                        Admin
+                      </Button>
+                    </Link>
+                  )}
+                  <Link to="/account">
+                    <Button variant="ghost" size="icon">
+                      <User size={20} />
                     </Button>
                   </Link>
-                )}
-                <Link to="/account">
-                  <Button variant="outline"><User size={18} />{t.nav.myAccount}</Button>
-                </Link>
-                <Button variant="ghost" size="icon" onClick={handleLogout}><LogOut size={18} /></Button>
+                  <Button variant="ghost" size="icon" onClick={handleLogout}>
+                    <LogOut size={20} />
+                  </Button>
+                </div>
               </>
             ) : (
-              <>
-                <Link to="/auth"><Button variant="outline"><User size={18} />{t.nav.login}</Button></Link>
-                <Link to="/auth"><Button variant="hero">{t.nav.signup}</Button></Link>
-              </>
+              <div className="hidden sm:flex items-center gap-2">
+                <Link to="/auth">
+                  <Button variant="outline" size="sm">
+                    {t.nav.login}
+                  </Button>
+                </Link>
+                <Link to="/auth?mode=signup">
+                  <Button size="sm">
+                    {t.nav.signup}
+                  </Button>
+                </Link>
+              </div>
             )}
-          </div>
 
-          {/* Mobile Menu Button */}
-          <button className="lg:hidden p-2 text-foreground" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="lg:hidden py-4 border-t border-border animate-fade-in">
-            <div className="px-4 pb-4 border-b border-border mb-4">
-              <LanguageSwitcher />
-            </div>
-            
+          <div className="lg:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-2">
               {navItems.map((item) => (
-                <Link 
-                  key={item.label} 
-                  to={item.href} 
-                  className="block px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors" 
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
                   {item.label}
                 </Link>
               ))}
-              <div className="flex flex-col gap-2 mt-4 px-4">
-                {user ? (
-                  <>
-                    {isAdmin && (
-                      <Link to="/admin" onClick={() => setIsOpen(false)}>
-                        <Button variant="outline" className="w-full"><Shield size={18} />Administration</Button>
-                      </Link>
-                    )}
-                    <Link to="/account" onClick={() => setIsOpen(false)}><Button variant="outline" className="w-full"><User size={18} />{t.nav.myAccount}</Button></Link>
-                    <Button variant="ghost" className="w-full" onClick={handleLogout}><LogOut size={18} />{t.nav.logout}</Button>
-                  </>
-                ) : (
-                  <>
-                    <Link to="/auth" onClick={() => setIsOpen(false)}><Button variant="outline" className="w-full"><User size={18} />{t.nav.login}</Button></Link>
-                    <Link to="/auth" onClick={() => setIsOpen(false)}><Button variant="hero" className="w-full">{t.nav.signup}</Button></Link>
-                  </>
-                )}
-              </div>
+              {user ? (
+                <>
+                  <Link
+                    to="/account"
+                    className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {t.nav.myAccount}
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Administration
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors text-left"
+                  >
+                    {t.nav.logout}
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2 px-4 pt-2">
+                  <Link to="/auth" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full">
+                      {t.nav.login}
+                    </Button>
+                  </Link>
+                  <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full">
+                      {t.nav.signup}
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}

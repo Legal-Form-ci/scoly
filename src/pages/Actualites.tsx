@@ -30,7 +30,7 @@ interface Article {
   author_id: string;
 }
 
-const Journal = () => {
+const Actualites = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -111,7 +111,7 @@ const Journal = () => {
           <div className="max-w-3xl mx-auto text-center text-primary-foreground">
             <div className="flex items-center justify-center gap-2 mb-4">
               <BookOpen size={32} />
-              <span className="text-lg font-medium">Actualités Scoly</span>
+              <span className="text-lg font-medium">Actualités Izy-scoly</span>
             </div>
             <h1 className="text-4xl lg:text-5xl font-display font-bold mb-6">
               Actualités & Publications
@@ -156,7 +156,7 @@ const Journal = () => {
             </div>
             
             {user && (
-              <Link to="/journal/write">
+              <Link to="/actualites/write">
                 <Button variant="hero">
                   <PenTool size={18} />
                   Publier un article
@@ -178,7 +178,7 @@ const Journal = () => {
                 Soyez le premier à publier un article !
               </p>
               {user && (
-                <Link to="/journal/write">
+                <Link to="/actualites/write">
                   <Button variant="hero">
                     <PenTool size={18} />
                     Publier un article
@@ -216,7 +216,7 @@ const Journal = () => {
                       {getTitle(article)}
                     </h3>
                     <p className="text-muted-foreground text-sm line-clamp-3">
-                      {getExcerpt(article) || "Découvrez cet article passionnant sur le journal Scoly..."}
+                      {getExcerpt(article) || "Découvrez cet article passionnant sur Izy-scoly..."}
                     </p>
                   </CardContent>
                   <CardFooter className="p-4 pt-0 flex items-center justify-between text-sm text-muted-foreground">
@@ -253,11 +253,11 @@ const Journal = () => {
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
               Partagez vos connaissances avec des milliers d'étudiants en publiant vos articles, 
-              ouvrages et ressources éducatives sur Scoly.
+              ouvrages et ressources éducatives sur Izy-scoly.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               {user ? (
-                <Link to="/journal/write">
+                <Link to="/actualites/write">
                   <Button variant="hero" size="lg">
                     <PenTool size={18} />
                     Commencer à écrire
@@ -285,4 +285,4 @@ const Journal = () => {
   );
 };
 
-export default Journal;
+export default Actualites;
