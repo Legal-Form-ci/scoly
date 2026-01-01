@@ -128,19 +128,24 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-primary-foreground/20 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-center md:text-left">
-            <p className="text-primary-foreground/80 text-sm">
-              © {new Date().getFullYear()} Izy-scoly. {t.footer.copyright}
-            </p>
             <a 
-              href="https://wa.me/2250759566087?text=Bonjour%2C%20je%20vous%20contacte%20depuis%20la%20plateforme%20Izy-scoly.%20J'aimerais%20avoir%20plus%20d'informations."
+              href="https://ikoffi.agricapital.ci"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-primary-foreground/60 text-xs mt-2 hover:text-accent transition-colors"
+              className="text-primary-foreground/80 text-sm hover:text-accent transition-colors cursor-pointer"
+            >
+              © {new Date().getFullYear()} Izy-scoly. {t.footer.copyright}
+            </a>
+            <a 
+              href="https://ikoffi.agricapital.ci"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-primary-foreground/60 text-xs mt-2 hover:text-accent transition-all duration-300 hover:scale-105 cursor-pointer"
             >
               <img 
                 src="/founder-inocent-koffi.jpg" 
                 alt="Inocent KOFFI" 
-                className="w-6 h-6 rounded-full object-cover border border-primary-foreground/30"
+                className="w-6 h-6 rounded-full object-cover border border-primary-foreground/30 hover:border-accent transition-colors"
               />
               <span>Plateforme développée par Inocent KOFFI</span>
             </a>
