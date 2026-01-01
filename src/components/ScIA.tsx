@@ -293,7 +293,7 @@ const ScIA = () => {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-50"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50"
           >
             <Button
               onClick={() => setIsOpen(true)}
@@ -308,7 +308,7 @@ const ScIA = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
-              className="absolute bottom-full right-0 mb-2 bg-card border border-border rounded-lg px-3 py-2 shadow-lg whitespace-nowrap"
+              className="absolute bottom-full right-0 mb-2 bg-card border border-border rounded-lg px-3 py-2 shadow-lg whitespace-nowrap hidden sm:block"
             >
               <p className="text-sm font-medium">{currentTexts.needHelp} 💬</p>
             </motion.div>
@@ -325,8 +325,8 @@ const ScIA = () => {
             className={cn(
               "fixed z-50 bg-background border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col",
               isExpanded 
-                ? "inset-4 md:inset-8" 
-                : "bottom-6 right-6 w-[380px] h-[600px] max-h-[80vh]"
+                ? "inset-2 sm:inset-4 md:inset-8" 
+                : "bottom-4 right-4 left-4 sm:left-auto sm:w-[380px] h-[500px] sm:h-[550px] md:h-[600px] max-h-[85vh] sm:max-h-[80vh]"
             )}
           >
             {/* Header */}
