@@ -88,15 +88,15 @@ const handler = async (req: Request): Promise<Response> => {
               <div class="success-icon">✅</div>
               <p>Bonjour <strong>${authorName}</strong>,</p>
               <p>Excellente nouvelle ! Votre article <strong>"${article.title_fr}"</strong> a été examiné et approuvé par notre équipe de modération.</p>
-              <p>Votre article est maintenant publié et accessible à tous les lecteurs de Scoly.</p>
-              <p>Merci pour votre contribution à la communauté Scoly !</p>
+              <p>Votre article est maintenant publié et accessible à tous les lecteurs d'Izy-scoly.</p>
+              <p>Merci pour votre contribution à la communauté Izy-scoly !</p>
               <center>
-                <a href="https://scoly.ci/journal" class="button">Voir mon article</a>
+                <a href="https://izy-scoly.ci/actualites" class="button">Voir mon article</a>
               </center>
             </div>
             <div class="footer">
-              <p>L'équipe Scoly</p>
-              <p>© ${new Date().getFullYear()} Scoly - Tous droits réservés</p>
+              <p>L'équipe Izy-scoly</p>
+              <p>© ${new Date().getFullYear()} Izy-scoly - Tous droits réservés</p>
             </div>
           </div>
         </body>
@@ -136,12 +136,12 @@ const handler = async (req: Request): Promise<Response> => {
               ` : ""}
               <p>Vous pouvez modifier votre article depuis votre espace auteur et le soumettre à nouveau pour révision.</p>
               <center>
-                <a href="https://scoly.ci/author" class="button">Modifier mon article</a>
+                <a href="https://izy-scoly.ci/author" class="button">Modifier mon article</a>
               </center>
             </div>
             <div class="footer">
-              <p>L'équipe Scoly</p>
-              <p>© ${new Date().getFullYear()} Scoly - Tous droits réservés</p>
+              <p>L'équipe Izy-scoly</p>
+              <p>© ${new Date().getFullYear()} Izy-scoly - Tous droits réservés</p>
             </div>
           </div>
         </body>
@@ -156,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Scoly <onboarding@resend.dev>",
+        from: "Izy-scoly <onboarding@resend.dev>",
         to: [authorEmail],
         subject,
         html: htmlContent,

@@ -145,7 +145,7 @@ const Shop = () => {
         <div className="container mx-auto px-4">
           <div className="text-center text-primary-foreground">
             <h1 className="text-4xl lg:text-5xl font-display font-bold mb-4">
-              Boutique Scoly
+              Boutique Izy-scoly
             </h1>
             <p className="text-lg opacity-90 max-w-2xl mx-auto mb-4">
               Toutes vos fournitures scolaires et bureautiques en un seul endroit

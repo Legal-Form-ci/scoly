@@ -2,9 +2,48 @@ import { ShoppingBag, Newspaper, Truck, ArrowRight, Package, CreditCard, Star, P
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SpacesSection = () => {
   const { t } = useLanguage();
+  const [stats, setStats] = useState({ products: 0, articles: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const { count: productsCount } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+
+      const { count: articlesCount } = await supabase
+        .from('articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'published');
+
+      setStats({
+        products: productsCount || 0,
+        articles: articlesCount || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatNumber = (num: number) => {
+    if (num === 0) return "0";
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1).replace('.0', '')}K+`;
+    }
+    return num.toString() + (num > 0 ? "+" : "");
+  };
   
   return (
     <section className="py-20 lg:py-32 bg-background" id="spaces">
@@ -36,7 +75,7 @@ const SpacesSection = () => {
               { icon: <Truck size={18} />, text: "Livraison gratuite" },
               { icon: <CreditCard size={18} />, text: "Paiement Mobile Money" },
             ]}
-            stats={{ value: "1000+", label: "Produits" }}
+            stats={{ value: loading ? "..." : formatNumber(stats.products), label: "Produits" }}
             gradient="from-primary to-primary-light"
             buttonVariant="hero"
             href="/shop"
@@ -72,7 +111,7 @@ const SpacesSection = () => {
               { icon: <BookOpen size={18} />, text: "Résultats scolaires" },
               { icon: <Star size={18} />, text: "Guides gratuits" },
             ]}
-            stats={{ value: "100+", label: "Publications" }}
+            stats={{ value: loading ? "..." : formatNumber(stats.articles), label: "Publications" }}
             gradient="from-accent to-yellow-400"
             buttonVariant="accent"
             href="/actualites"

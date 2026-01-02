@@ -193,14 +193,14 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          description: `Commande Scoly #${orderId.slice(0, 8)}`,
+          description: `Commande Izy-scoly #${orderId.slice(0, 8)}`,
           amount: Math.round(amount),
           currency: { iso: 'XOF' },
           callback_url: `${supabaseUrl}/functions/v1/fedapay-webhook`,
           customer: {
             firstname: customerName?.split(' ')[0] || 'Client',
-            lastname: customerName?.split(' ').slice(1).join(' ') || 'Scoly',
-            email: customerEmail || 'client@scoly.com',
+            lastname: customerName?.split(' ').slice(1).join(' ') || 'Izy-scoly',
+            email: customerEmail || 'client@izy-scoly.ci',
             phone_number: {
               number: localPhone,
               country: detectedCountry
