@@ -2,9 +2,45 @@ import { ArrowRight, ShoppingBag, Newspaper, BookOpen, Truck } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const HeroSection = () => {
   const { t } = useLanguage();
+  const [stats, setStats] = useState({ products: 0, articles: 0 });
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const { count: productsCount } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+
+      const { count: articlesCount } = await supabase
+        .from('articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'published');
+
+      setStats({
+        products: productsCount || 0,
+        articles: articlesCount || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const formatNumber = (num: number) => {
+    if (num === 0) return "0";
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1).replace('.0', '')}K+`;
+    }
+    return num.toString() + (num > 0 ? "+" : "");
+  };
   
   // Izy-scoly categories
   const scolyCategories = [
@@ -92,8 +128,8 @@ const HeroSection = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up animation-delay-500">
             <FeatureCard
               icon={<ShoppingBag size={28} />}
-              title="Large catalogue"
-              description="Plus de 1000 produits disponibles"
+              title="Catalogue"
+              description={`${formatNumber(stats.products)} produits disponibles`}
               color="bg-primary-light/20"
               href="/shop"
             />
@@ -107,7 +143,7 @@ const HeroSection = () => {
             <FeatureCard
               icon={<Newspaper size={28} />}
               title="Actualités Izy-scoly"
-              description="Articles, guides et ressources"
+              description={`${formatNumber(stats.articles)} publications`}
               color="bg-accent/20"
               href="/actualites"
             />

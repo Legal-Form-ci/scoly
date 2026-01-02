@@ -97,7 +97,7 @@ const WriteArticle = () => {
           : "Votre brouillon a été enregistré.",
       });
       
-      navigate('/journal');
+      navigate('/actualites');
     } catch (error) {
       console.error('Error saving article:', error);
       toast({
@@ -129,14 +129,14 @@ const WriteArticle = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 py-24">
-        <Button variant="ghost" className="mb-6" onClick={() => navigate('/journal')}>
+        <Button variant="ghost" className="mb-6" onClick={() => navigate('/actualites')}>
           <ArrowLeft size={18} />
           Retour aux actualités
         </Button>
 
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-display font-bold text-foreground mb-2">Publier un article</h1>
-          <p className="text-muted-foreground mb-8">Partagez vos idées et conseils avec la communauté Scoly</p>
+          <p className="text-muted-foreground mb-8">Partagez vos idées et conseils avec la communauté Izy-scoly</p>
 
           <div className="grid gap-8">
             {/* Main Content */}

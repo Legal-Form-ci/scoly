@@ -77,7 +77,7 @@ const Admin = () => {
     { id: "categories", label: "Catégories", icon: FolderTree },
     { id: "orders", label: "Commandes", icon: ShoppingBag },
     { id: "users", label: "Utilisateurs", icon: Users },
-    { id: "articles", label: "Articles Journal", icon: Package },
+    { id: "articles", label: "Actualités", icon: Package },
     { id: "promotions", label: "Promotions", icon: Tag },
   ];
 
@@ -885,7 +885,7 @@ const CommissionsTab = () => {
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Vendeur</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Montant vente</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Taux</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Commission Scoly</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Commission</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Statut</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
               </tr>
@@ -951,7 +951,7 @@ const ArticlesTab = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-foreground mb-8">Modération des Articles (Journal Scoly)</h1>
+      <h1 className="text-2xl font-display font-bold text-foreground mb-8">Modération des Actualités</h1>
 
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">

@@ -62,7 +62,7 @@ const ArticlePayment = () => {
 
     if (error || !data) {
       toast.error("Article non trouvé");
-      navigate("/journal");
+      navigate("/actualites");
       return;
     }
 
@@ -243,11 +243,11 @@ const ArticlePayment = () => {
               Vous avez déjà accès à cet article. Vous pouvez le lire maintenant.
             </p>
             <div className="flex gap-4 justify-center">
-              <Button variant="outline" onClick={() => navigate("/journal")}>
+              <Button variant="outline" onClick={() => navigate("/actualites")}>
                 <ArrowLeft size={18} className="mr-2" />
-                Retour au journal
+                Retour aux actualités
               </Button>
-              <Button onClick={() => navigate(`/journal/article/${articleId}`)}>
+              <Button onClick={() => navigate(`/actualites/${articleId}`)}>
                 Lire l'article
               </Button>
             </div>
@@ -265,11 +265,11 @@ const ArticlePayment = () => {
       <div className="container mx-auto px-4 py-24">
         <Button 
           variant="ghost" 
-          onClick={() => navigate("/journal")} 
+          onClick={() => navigate("/actualites")} 
           className="mb-8"
         >
           <ArrowLeft size={18} className="mr-2" />
-          Retour au journal
+          Retour aux actualités
         </Button>
 
         <div className="max-w-4xl mx-auto">

@@ -95,7 +95,7 @@ const FeaturedArticlesCarousel = () => {
               Publications populaires
             </h2>
             <p className="text-muted-foreground mt-2">
-              Les articles les plus lus de Scoly
+              Les articles les plus lus d'Izy-scoly
             </p>
           </div>
           <div className="flex gap-2">
@@ -130,7 +130,7 @@ const FeaturedArticlesCarousel = () => {
                 key={article.id}
                 className="flex-shrink-0 w-full sm:w-1/2 lg:w-1/3 group"
               >
-                <Link to={`/journal/${article.id}`} className="block bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all">
+                <Link to={`/actualites/${article.id}`} className="block bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all">
                   <div className="relative aspect-video overflow-hidden">
                     {article.cover_image ? (
                       <img
@@ -185,7 +185,7 @@ const FeaturedArticlesCarousel = () => {
         </div>
 
         <div className="text-center mt-8">
-          <Link to="/journal">
+          <Link to="/actualites">
             <Button variant="outline" size="lg">
               Voir toutes les actualités
             </Button>
