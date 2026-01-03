@@ -97,6 +97,7 @@ const AuthorDashboard = () => {
   const categories = [
     { value: "general", label: "Général" },
     { value: "education", label: "Éducation" },
+    { value: "bureautique", label: "Bureautique" },
     { value: "resources", label: "Ressources" },
     { value: "news", label: "Actualités" },
     { value: "guides", label: "Guides" },

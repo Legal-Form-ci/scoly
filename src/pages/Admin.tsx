@@ -33,6 +33,8 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminDashboard from "@/components/admin/AdminDashboard";
+import UserManagement from "@/components/admin/UserManagement";
+import ProductForm from "@/components/admin/ProductForm";
 
 type TabType = "dashboard" | "products" | "categories" | "orders" | "users" | "articles" | "promotions" | "notifications";
 
@@ -148,7 +150,7 @@ const Admin = () => {
           {activeTab === "products" && <ProductsTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "orders" && <OrdersTab />}
-          {activeTab === "users" && <UsersTab />}
+          {activeTab === "users" && <UserManagement />}
           {activeTab === "articles" && <ArticlesTab />}
           {activeTab === "promotions" && <PromotionsTab />}
         </div>
@@ -164,28 +166,20 @@ const ProductsTab = () => {
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name_fr: "",
-    name_en: "",
-    name_de: "",
-    name_es: "",
-    description_fr: "",
-    description_en: "",
-    description_de: "",
-    description_es: "",
-    price: "",
-    original_price: "",
-    discount_percent: "",
-    stock: "",
-    category_id: "",
-    image_url: "",
-    is_active: true,
-    is_featured: false,
-  });
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('products-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchProducts)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchProducts = async () => {
@@ -201,72 +195,8 @@ const ProductsTab = () => {
     setCategories(data || []);
   };
 
-  const handleSubmit = async () => {
-    const productData = {
-      name_fr: formData.name_fr,
-      name_en: formData.name_en || formData.name_fr,
-      name_de: formData.name_de || formData.name_fr,
-      name_es: formData.name_es || formData.name_fr,
-      description_fr: formData.description_fr,
-      description_en: formData.description_en,
-      description_de: formData.description_de,
-      description_es: formData.description_es,
-      price: parseFloat(formData.price) || 0,
-      original_price: formData.original_price ? parseFloat(formData.original_price) : null,
-      discount_percent: formData.discount_percent ? parseInt(formData.discount_percent) : 0,
-      stock: parseInt(formData.stock) || 0,
-      category_id: formData.category_id || null,
-      image_url: formData.image_url || null,
-      is_active: formData.is_active,
-      is_featured: formData.is_featured,
-    };
-
-    if (editingProduct) {
-      const { error } = await supabase
-        .from("products")
-        .update(productData)
-        .eq("id", editingProduct.id);
-      
-      if (error) {
-        toast.error("Erreur lors de la modification");
-      } else {
-        toast.success("Produit modifié avec succès");
-      }
-    } else {
-      const { error } = await supabase.from("products").insert(productData);
-      
-      if (error) {
-        toast.error("Erreur lors de l'ajout");
-      } else {
-        toast.success("Produit ajouté avec succès");
-      }
-    }
-
-    setIsDialogOpen(false);
-    resetForm();
-    fetchProducts();
-  };
-
   const handleEdit = (product: any) => {
     setEditingProduct(product);
-    setFormData({
-      name_fr: product.name_fr,
-      name_en: product.name_en,
-      name_de: product.name_de,
-      name_es: product.name_es,
-      description_fr: product.description_fr || "",
-      description_en: product.description_en || "",
-      description_de: product.description_de || "",
-      description_es: product.description_es || "",
-      price: product.price.toString(),
-      original_price: product.original_price?.toString() || "",
-      discount_percent: product.discount_percent?.toString() || "",
-      stock: product.stock?.toString() || "0",
-      category_id: product.category_id || "",
-      image_url: product.image_url || "",
-      is_active: product.is_active,
-      is_featured: product.is_featured,
-    });
     setIsDialogOpen(true);
   };
 
@@ -283,28 +213,6 @@ const ProductsTab = () => {
     }
   };
 
-  const resetForm = () => {
-    setEditingProduct(null);
-    setFormData({
-      name_fr: "",
-      name_en: "",
-      name_de: "",
-      name_es: "",
-      description_fr: "",
-      description_en: "",
-      description_de: "",
-      description_es: "",
-      price: "",
-      original_price: "",
-      discount_percent: "",
-      stock: "",
-      category_id: "",
-      image_url: "",
-      is_active: true,
-      is_featured: false,
-    });
-  };
-
   const filteredProducts = products.filter((p) =>
     p.name_fr.toLowerCase().includes(search.toLowerCase())
   );
@@ -313,7 +221,7 @@ const ProductsTab = () => {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-display font-bold text-foreground">Produits</h1>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingProduct(null); }}>
           <DialogTrigger asChild>
             <Button variant="hero">
               <Plus size={18} />
@@ -324,86 +232,12 @@ const ProductsTab = () => {
             <DialogHeader>
               <DialogTitle>{editingProduct ? "Modifier le produit" : "Ajouter un produit"}</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Nom (FR) *</Label>
-                  <Input value={formData.name_fr} onChange={(e) => setFormData({ ...formData, name_fr: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Nom (EN)</Label>
-                  <Input value={formData.name_en} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Nom (DE)</Label>
-                  <Input value={formData.name_de} onChange={(e) => setFormData({ ...formData, name_de: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Nom (ES)</Label>
-                  <Input value={formData.name_es} onChange={(e) => setFormData({ ...formData, name_es: e.target.value })} />
-                </div>
-              </div>
-              
-              <div>
-                <Label>Description (FR)</Label>
-                <Textarea value={formData.description_fr} onChange={(e) => setFormData({ ...formData, description_fr: e.target.value })} />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Prix (FCFA) *</Label>
-                  <Input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Prix original</Label>
-                  <Input type="number" value={formData.original_price} onChange={(e) => setFormData({ ...formData, original_price: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Réduction (%)</Label>
-                  <Input type="number" value={formData.discount_percent} onChange={(e) => setFormData({ ...formData, discount_percent: e.target.value })} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Stock</Label>
-                  <Input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Catégorie</Label>
-                  <Select value={formData.category_id} onValueChange={(value) => setFormData({ ...formData, category_id: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner une catégorie" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name_fr}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label>URL de l'image</Label>
-                <Input value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} />
-              </div>
-
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Switch checked={formData.is_active} onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })} />
-                  <Label>Actif</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={formData.is_featured} onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })} />
-                  <Label>En vedette</Label>
-                </div>
-              </div>
-
-              <Button onClick={handleSubmit} className="w-full">
-                {editingProduct ? "Modifier" : "Ajouter"}
-              </Button>
-            </div>
+            <ProductForm 
+              product={editingProduct}
+              categories={categories}
+              onSubmit={() => { setIsDialogOpen(false); setEditingProduct(null); fetchProducts(); }}
+              onCancel={() => { setIsDialogOpen(false); setEditingProduct(null); }}
+            />
           </DialogContent>
         </Dialog>
       </div>
