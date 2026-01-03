@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { CheckCircle, CreditCard, Loader2, Phone, AlertCircle } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { CheckCircle, Loader2, AlertCircle, MapPin, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -11,41 +13,84 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { usePayment, PaymentMethod } from "@/hooks/usePayment";
-import PaymentTracker from "@/components/PaymentTracker";
-import { cn } from "@/lib/utils";
+import { useKkiaPay } from "@/hooks/useKkiaPay";
 
-const paymentMethods: { id: PaymentMethod; name: string; color: string }[] = [
-  { id: 'orange', name: 'Orange Money', color: 'bg-orange-500' },
-  { id: 'mtn', name: 'MTN Mobile Money', color: 'bg-yellow-400' },
-  { id: 'moov', name: 'Moov Money', color: 'bg-blue-500' },
-  { id: 'wave', name: 'Wave', color: 'bg-cyan-500' },
+// Regions of Côte d'Ivoire
+const regions = [
+  "Abidjan",
+  "Bas-Sassandra",
+  "Comoé",
+  "Denguélé",
+  "Gôh-Djiboua",
+  "Lacs",
+  "Lagunes",
+  "Montagnes",
+  "Sassandra-Marahoué",
+  "Savanes",
+  "Vallée du Bandama",
+  "Woroba",
+  "Yamoussoukro",
+  "Zanzan"
 ];
 
-type CheckoutStep = 'form' | 'payment' | 'tracking' | 'success';
+// Cities by region
+const citiesByRegion: Record<string, string[]> = {
+  "Abidjan": ["Abidjan", "Cocody", "Plateau", "Yopougon", "Marcory", "Koumassi", "Treichville", "Adjamé", "Abobo", "Port-Bouët", "Bingerville"],
+  "Bas-Sassandra": ["San-Pédro", "Soubré", "Tabou", "Sassandra"],
+  "Comoé": ["Abengourou", "Agnibilékrou", "Aboisso"],
+  "Denguélé": ["Odienné"],
+  "Gôh-Djiboua": ["Gagnoa", "Divo", "Lakota"],
+  "Lacs": ["Dimbokro", "Toumodi", "Yamoussoukro"],
+  "Lagunes": ["Dabou", "Grand-Lahou", "Jacqueville", "Tiassalé"],
+  "Montagnes": ["Man", "Danané", "Duékoué", "Guiglo"],
+  "Sassandra-Marahoué": ["Daloa", "Vavoua", "Issia", "Zuénoula"],
+  "Savanes": ["Korhogo", "Boundiali", "Ferkessédougou", "Tengrela"],
+  "Vallée du Bandama": ["Bouaké", "Béoumi", "Katiola", "Dabakala"],
+  "Woroba": ["Séguéla", "Mankono", "Touba"],
+  "Yamoussoukro": ["Yamoussoukro"],
+  "Zanzan": ["Bondoukou", "Bouna", "Tanda"]
+};
+
+type CheckoutStep = 'form' | 'payment' | 'success';
 
 const Checkout = () => {
   const { language, t } = useLanguage();
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { initiatePayment, loading: paymentLoading, paymentStatus } = usePayment();
+  const { openPaymentWidget, loading: paymentLoading, isScriptLoaded } = useKkiaPay();
 
   const [step, setStep] = useState<CheckoutStep>('form');
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState("");
-  const [paymentId, setPaymentId] = useState<string | null>(null);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | "">("");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    address: "",
+    region: "",
     city: "",
+    commune: "",
+    quartier: "",
+    address: "",
+    landmark: "",
+    notes: "",
   });
+
+  // Check for payment success from URL
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      clearCart();
+      setStep('success');
+      toast({
+        title: t.checkout.orderSuccess,
+        description: t.checkout.orderSuccessMessage,
+      });
+    }
+  }, [searchParams]);
 
   // Load user profile data
   useEffect(() => {
@@ -86,18 +131,10 @@ const Checkout = () => {
   };
 
   const validateForm = () => {
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.address || !formData.city) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.region || !formData.city) {
       toast({
         title: t.common.error,
         description: "Veuillez remplir tous les champs obligatoires",
-        variant: "destructive",
-      });
-      return false;
-    }
-    if (!selectedPayment) {
-      toast({
-        title: t.common.error,
-        description: t.checkout.selectPayment,
         variant: "destructive",
       });
       return false;
@@ -124,15 +161,26 @@ const Checkout = () => {
     setLoading(true);
 
     try {
+      // Build full address
+      const fullAddress = [
+        formData.address,
+        formData.quartier,
+        formData.commune,
+        formData.city,
+        formData.region,
+        formData.landmark ? `(Repère: ${formData.landmark})` : ''
+      ].filter(Boolean).join(', ');
+
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
           total_amount: total,
-          shipping_address: `${formData.address}, ${formData.city}`,
+          shipping_address: fullAddress,
           phone: formData.phone,
-          payment_method: selectedPayment,
+          notes: formData.notes,
+          payment_method: 'kkiapay',
           status: 'pending',
         })
         .select()
@@ -174,51 +222,37 @@ const Checkout = () => {
     }
   };
 
-  const handleInitiatePayment = async () => {
-    if (!orderId || !user || !selectedPayment) return;
+  const handlePayment = () => {
+    if (!orderId || !user) return;
 
-    const result = await initiatePayment(
+    openPaymentWidget(
+      {
+        amount: total,
+        reason: `Commande Izy-scoly #${orderNumber}`,
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phone: formData.phone
+      },
       orderId,
-      total,
-      selectedPayment as PaymentMethod,
-      formData.phone,
       user.id,
-      formData.email,
-      `${formData.firstName} ${formData.lastName}`
+      async (transactionId) => {
+        // Success callback
+        await clearCart();
+        setStep('success');
+        toast({
+          title: t.checkout.orderSuccess,
+          description: t.checkout.orderSuccessMessage,
+        });
+      },
+      () => {
+        // Failed callback
+        toast({
+          title: "Paiement échoué",
+          description: "Veuillez réessayer",
+          variant: "destructive",
+        });
+      }
     );
-
-    if (result.success && result.paymentId) {
-      setPaymentId(result.paymentId);
-      setStep('tracking');
-      toast({
-        title: "Paiement initié",
-        description: result.message,
-      });
-    } else {
-      toast({
-        title: t.common.error,
-        description: result.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handlePaymentComplete = async () => {
-    await clearCart();
-    setStep('success');
-    toast({
-      title: t.checkout.orderSuccess,
-      description: t.checkout.orderSuccessMessage,
-    });
-  };
-
-  const handlePaymentFailed = () => {
-    toast({
-      title: "Paiement échoué",
-      description: "Veuillez réessayer ou choisir un autre mode de paiement",
-      variant: "destructive",
-    });
-    setStep('payment');
   };
 
   // Success screen
@@ -256,40 +290,8 @@ const Checkout = () => {
     );
   }
 
-  // Payment tracking screen
-  if (step === 'tracking' && paymentId) {
-    return (
-      <main className="min-h-screen bg-background">
-        <Navbar />
-        <div className="pt-24 pb-12">
-          <div className="container mx-auto px-4 max-w-lg py-12">
-            <h1 className="text-2xl font-display font-bold text-foreground mb-6 text-center">
-              Suivi du paiement
-            </h1>
-            <PaymentTracker
-              paymentId={paymentId}
-              orderId={orderId || undefined}
-              onPaymentComplete={handlePaymentComplete}
-              onPaymentFailed={handlePaymentFailed}
-            />
-            <Button
-              variant="outline"
-              className="w-full mt-4"
-              onClick={() => setStep('payment')}
-            >
-              Retour
-            </Button>
-          </div>
-        </div>
-        <Footer />
-      </main>
-    );
-  }
-
-  // Payment initiation screen
+  // Payment screen
   if (step === 'payment') {
-    const selectedMethod = paymentMethods.find(m => m.id === selectedPayment);
-    
     return (
       <main className="min-h-screen bg-background">
         <Navbar />
@@ -306,35 +308,35 @@ const Checkout = () => {
                 <p className="text-3xl font-bold text-primary">{formatPrice(total)}</p>
               </div>
 
-              {/* Payment method */}
-              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                <div className={cn("w-12 h-12 rounded-lg", selectedMethod?.color)} />
+              {/* Payment info */}
+              <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <CreditCard className="h-8 w-8 text-primary" />
                 <div>
-                  <p className="font-semibold">{selectedMethod?.name}</p>
-                  <p className="text-sm text-muted-foreground">{formData.phone}</p>
+                  <p className="font-semibold">Paiement sécurisé KkiaPay</p>
+                  <p className="text-sm text-muted-foreground">Orange Money, MTN, Moov, Wave</p>
                 </div>
               </div>
 
-              {/* Info message */}
-              <div className="flex items-start gap-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
-                <Phone className="h-5 w-5 text-primary mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-foreground mb-1">Instructions</p>
-                  <p className="text-muted-foreground">
-                    Après avoir cliqué sur "Payer maintenant", vous recevrez une demande de confirmation sur votre téléphone. Validez le paiement pour finaliser votre commande.
-                  </p>
-                </div>
+              {/* Instructions */}
+              <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg">
+                <p className="font-medium text-foreground mb-2">Instructions :</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Cliquez sur "Payer maintenant"</li>
+                  <li>Sélectionnez votre méthode de paiement</li>
+                  <li>Entrez votre numéro et validez</li>
+                  <li>Confirmez le paiement sur votre téléphone</li>
+                </ol>
               </div>
 
               <Button
                 variant="hero"
-                className="w-full"
-                onClick={handleInitiatePayment}
-                disabled={paymentLoading}
+                className="w-full h-14 text-lg"
+                onClick={handlePayment}
+                disabled={paymentLoading || !isScriptLoaded}
               >
                 {paymentLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Traitement...
                   </>
                 ) : (
@@ -434,106 +436,119 @@ const Checkout = () => {
                     </div>
                   </div>
 
-                  {/* Shipping Info */}
+                  {/* Shipping Info - Enhanced */}
                   <div className="bg-card rounded-xl border border-border p-6">
-                    <h2 className="text-xl font-display font-bold text-foreground mb-6">
-                      {t.checkout.shippingInfo}
-                    </h2>
+                    <div className="flex items-center gap-2 mb-6">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      <h2 className="text-xl font-display font-bold text-foreground">
+                        {t.checkout.shippingInfo}
+                      </h2>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="address">{t.checkout.address} *</Label>
+                      <div>
+                        <Label>Région *</Label>
+                        <Select 
+                          value={formData.region} 
+                          onValueChange={(value) => setFormData({ ...formData, region: value, city: "" })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Sélectionner une région" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {regions.map((region) => (
+                              <SelectItem key={region} value={region}>{region}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Ville *</Label>
+                        <Select 
+                          value={formData.city} 
+                          onValueChange={(value) => setFormData({ ...formData, city: value })}
+                          disabled={!formData.region}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Sélectionner une ville" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(citiesByRegion[formData.region] || []).map((city) => (
+                              <SelectItem key={city} value={city}>{city}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Commune</Label>
                         <Input
-                          id="address"
+                          value={formData.commune}
+                          onChange={(e) => setFormData({ ...formData, commune: e.target.value })}
+                          className="mt-1"
+                          placeholder="Ex: Cocody"
+                        />
+                      </div>
+                      <div>
+                        <Label>Quartier</Label>
+                        <Input
+                          value={formData.quartier}
+                          onChange={(e) => setFormData({ ...formData, quartier: e.target.value })}
+                          className="mt-1"
+                          placeholder="Ex: Riviera 2"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label>{t.checkout.address}</Label>
+                        <Input
                           value={formData.address}
                           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                          required
                           className="mt-1"
-                          placeholder="Rue, quartier, commune"
+                          placeholder="Rue, numéro, bâtiment..."
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="city">{t.checkout.city} *</Label>
+                      <div className="sm:col-span-2">
+                        <Label>Point de repère</Label>
                         <Input
-                          id="city"
-                          value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                          required
+                          value={formData.landmark}
+                          onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
                           className="mt-1"
-                          placeholder="Abidjan"
+                          placeholder="Ex: Près du supermarché, à côté de la pharmacie..."
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="country">{t.checkout.country}</Label>
-                        <Input
-                          id="country"
-                          value="Côte d'Ivoire"
-                          disabled
+                      <div className="sm:col-span-2">
+                        <Label>Instructions de livraison</Label>
+                        <Textarea
+                          value={formData.notes}
+                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                           className="mt-1"
+                          placeholder="Instructions supplémentaires pour le livreur..."
+                          rows={3}
                         />
                       </div>
                     </div>
-                  </div>
-
-                  {/* Payment Method */}
-                  <div className="bg-card rounded-xl border border-border p-6">
-                    <h2 className="text-xl font-display font-bold text-foreground mb-6">
-                      {t.checkout.paymentMethod}
-                    </h2>
-                    <div className="grid grid-cols-2 gap-4">
-                      {paymentMethods.map((method) => (
-                        <button
-                          key={method.id}
-                          type="button"
-                          onClick={() => setSelectedPayment(method.id)}
-                          className={cn(
-                            "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
-                            selectedPayment === method.id
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-primary/50'
-                          )}
-                        >
-                          <div className={cn("w-10 h-10 rounded-lg", method.color)} />
-                          <span className="font-medium text-foreground">{method.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-4">
-                      {t.checkout.paymentNote}
-                    </p>
                   </div>
                 </div>
 
                 {/* Order Summary */}
-                <div className="lg:col-span-1">
+                <div>
                   <div className="bg-card rounded-xl border border-border p-6 sticky top-24">
                     <h2 className="text-xl font-display font-bold text-foreground mb-6">
                       {t.checkout.orderSummary}
                     </h2>
-
-                    <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
+                    
+                    <div className="space-y-4 mb-6">
                       {items.map((item) => (
-                        <div key={item.id} className="flex gap-3">
-                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                            {item.product?.image_url ? (
-                              <img
-                                src={item.product.image_url}
-                                alt={getLocalizedName(item.product)}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <CreditCard size={20} className="text-muted-foreground" />
-                              </div>
-                            )}
+                        <div key={item.id} className="flex gap-4">
+                          <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                            <img
+                              src={item.product?.image_url || "/placeholder.svg"}
+                              alt={getLocalizedName(item.product)}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {getLocalizedName(item.product)}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {t.shop.quantity}: {item.quantity}
-                            </p>
-                            <p className="text-sm font-semibold text-primary">
+                            <p className="font-medium text-sm truncate">{getLocalizedName(item.product)}</p>
+                            <p className="text-sm text-muted-foreground">x{item.quantity}</p>
+                            <p className="text-sm font-medium text-primary">
                               {formatPrice((item.product?.price || 0) * item.quantity)}
                             </p>
                           </div>
@@ -541,17 +556,17 @@ const Checkout = () => {
                       ))}
                     </div>
 
-                    <div className="space-y-3 border-t border-border pt-4 mb-6">
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>{t.shop.subtotal}</span>
+                    <div className="border-t border-border pt-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Sous-total</span>
                         <span>{formatPrice(total)}</span>
                       </div>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>{t.shop.shipping}</span>
-                        <span className="text-green-500 font-medium">{t.shop.freeShipping}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Livraison</span>
+                        <span className="text-green-600 font-medium">Gratuite</span>
                       </div>
-                      <div className="border-t border-border pt-3 flex justify-between font-bold text-foreground">
-                        <span>{t.shop.total}</span>
+                      <div className="flex justify-between font-bold text-lg pt-2 border-t border-border">
+                        <span>Total</span>
                         <span className="text-primary">{formatPrice(total)}</span>
                       </div>
                     </div>
@@ -559,8 +574,8 @@ const Checkout = () => {
                     <Button
                       type="submit"
                       variant="hero"
-                      className="w-full"
-                      disabled={loading || items.length === 0}
+                      className="w-full mt-6"
+                      disabled={loading}
                     >
                       {loading ? (
                         <>
@@ -568,9 +583,13 @@ const Checkout = () => {
                           {t.common.loading}
                         </>
                       ) : (
-                        t.checkout.placeOrder
+                        "Procéder au paiement"
                       )}
                     </Button>
+
+                    <p className="text-xs text-muted-foreground text-center mt-4">
+                      Paiement 100% sécurisé via KkiaPay
+                    </p>
                   </div>
                 </div>
               </div>
