@@ -1,21 +1,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, AtSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
 import Logo from "@/components/Logo";
 import { z } from "zod";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [identifier, setIdentifier] = useState(""); // email or username
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -31,7 +34,7 @@ const Auth = () => {
   }, [user, navigate]);
 
   const loginSchema = z.object({
-    email: z.string().email(t.common.error).max(255),
+    identifier: z.string().min(1, t.common.required),
     password: z.string().min(6, t.common.required),
   });
 
@@ -41,6 +44,7 @@ const Auth = () => {
     confirmPassword: z.string(),
     firstName: z.string().max(100).optional(),
     lastName: z.string().max(100).optional(),
+    username: z.string().min(3).max(50).optional(),
   }).refine((data) => data.password === data.confirmPassword, {
     message: t.common.error,
     path: ["confirmPassword"],
@@ -53,7 +57,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const result = loginSchema.safeParse({ email, password });
+        const result = loginSchema.safeParse({ identifier, password });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
           result.error.errors.forEach((err) => {
@@ -66,8 +70,41 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await signIn(email, password);
+        // Check if identifier is email or username
+        let loginEmail = identifier;
+        
+        // If not an email, try to find the user by username in profiles
+        if (!identifier.includes('@')) {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .eq('username', identifier)
+            .maybeSingle();
+          
+          if (profile?.email) {
+            loginEmail = profile.email;
+          } else if (profile?.id) {
+            // User has username but no email stored - can't login by username yet
+            setErrors({ identifier: "Connectez-vous avec votre email. Le nom d'utilisateur sera disponible après votre première connexion." });
+            setLoading(false);
+            return;
+          } else {
+            setErrors({ identifier: "Utilisateur non trouvé" });
+            setLoading(false);
+            return;
+          }
+        }
+
+        const { error } = await signIn(loginEmail, password);
         if (!error) {
+          // Update profile with email on successful login
+          const { data: { user: loggedUser } } = await supabase.auth.getUser();
+          if (loggedUser?.email) {
+            await supabase
+              .from('profiles')
+              .update({ email: loggedUser.email })
+              .eq('id', loggedUser.id);
+          }
           navigate("/");
         }
       } else {
@@ -77,6 +114,7 @@ const Auth = () => {
           confirmPassword,
           firstName,
           lastName,
+          username,
         });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
@@ -92,6 +130,16 @@ const Auth = () => {
 
         const { error } = await signUp(email, password, firstName, lastName);
         if (!error) {
+          // Update username if provided
+          if (username) {
+            const { data: { user: newUser } } = await supabase.auth.getUser();
+            if (newUser) {
+              await supabase
+                .from('profiles')
+                .update({ username })
+                .eq('id', newUser.id);
+            }
+          }
           navigate("/");
         }
       }
@@ -101,7 +149,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+    <div className="min-h-screen bg-primary flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
           {/* Logo */}
@@ -114,68 +162,109 @@ const Auth = () => {
             {isLogin ? t.auth.loginTitle : t.auth.signupTitle}
           </h1>
           <p className="text-center text-muted-foreground mb-8">
-            {isLogin ? t.hero.subtitle.slice(0, 50) + "..." : t.cta.subtitle.slice(0, 50) + "..."}
+            {isLogin ? "Connectez-vous à votre compte Izy-scoly" : "Créez votre compte Izy-scoly"}
           </p>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <div className="grid grid-cols-2 gap-4">
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">{t.auth.firstName}</Label>
+                    <div className="relative mt-1">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="pl-10"
+                        placeholder="Innocent"
+                      />
+                    </div>
+                    {errors.firstName && (
+                      <p className="text-sm text-destructive mt-1">{errors.firstName}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">{t.auth.lastName}</Label>
+                    <div className="relative mt-1">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Input
+                        id="lastName"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="pl-10"
+                        placeholder="KOFFI"
+                      />
+                    </div>
+                    {errors.lastName && (
+                      <p className="text-sm text-destructive mt-1">{errors.lastName}</p>
+                    )}
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="firstName">{t.auth.firstName}</Label>
+                  <Label htmlFor="username">Nom d'utilisateur</Label>
                   <div className="relative mt-1">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                     <Input
-                      id="firstName"
+                      id="username"
                       type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       className="pl-10"
-                      placeholder="Innocent"
+                      placeholder="innocent_koffi"
                     />
                   </div>
-                  {errors.firstName && (
-                    <p className="text-sm text-destructive mt-1">{errors.firstName}</p>
+                  {errors.username && (
+                    <p className="text-sm text-destructive mt-1">{errors.username}</p>
                   )}
                 </div>
+
                 <div>
-                  <Label htmlFor="lastName">{t.auth.lastName}</Label>
+                  <Label htmlFor="email">{t.auth.email}</Label>
                   <div className="relative mt-1">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                     <Input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
-                      placeholder="KOFFI"
+                      placeholder="innocent.koffi@email.ci"
+                      required
                     />
                   </div>
-                  {errors.lastName && (
-                    <p className="text-sm text-destructive mt-1">{errors.lastName}</p>
+                  {errors.email && (
+                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
                   )}
                 </div>
-              </div>
+              </>
             )}
 
-            <div>
-              <Label htmlFor="email">{t.auth.email}</Label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  placeholder="innocent.koffi@email.ci"
-                  required
-                />
+            {isLogin && (
+              <div>
+                <Label htmlFor="identifier">Email ou nom d'utilisateur</Label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <Input
+                    id="identifier"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    className="pl-10"
+                    placeholder="email@example.ci ou Admin"
+                    required
+                  />
+                </div>
+                {errors.identifier && (
+                  <p className="text-sm text-destructive mt-1">{errors.identifier}</p>
+                )}
               </div>
-              {errors.email && (
-                <p className="text-sm text-destructive mt-1">{errors.email}</p>
-              )}
-            </div>
+            )}
 
             <div>
               <Label htmlFor="password">{t.auth.password}</Label>

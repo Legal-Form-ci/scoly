@@ -39,7 +39,7 @@ import ProductForm from "@/components/admin/ProductForm";
 type TabType = "dashboard" | "products" | "categories" | "orders" | "users" | "articles" | "promotions" | "notifications";
 
 const Admin = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -73,14 +73,23 @@ const Admin = () => {
     setLoading(false);
   };
 
+  // Translated menu items
+  const menuTexts = {
+    fr: { dashboard: "Tableau de bord", products: "Produits", categories: "Catégories", orders: "Commandes", users: "Utilisateurs", articles: "Actualités", promotions: "Promotions" },
+    en: { dashboard: "Dashboard", products: "Products", categories: "Categories", orders: "Orders", users: "Users", articles: "News", promotions: "Promotions" },
+    de: { dashboard: "Dashboard", products: "Produkte", categories: "Kategorien", orders: "Bestellungen", users: "Benutzer", articles: "Nachrichten", promotions: "Aktionen" },
+    es: { dashboard: "Panel", products: "Productos", categories: "Categorías", orders: "Pedidos", users: "Usuarios", articles: "Noticias", promotions: "Promociones" },
+  };
+  const mt = menuTexts[language as keyof typeof menuTexts] || menuTexts.fr;
+
   const menuItems = [
-    { id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { id: "products", label: "Produits", icon: Package },
-    { id: "categories", label: "Catégories", icon: FolderTree },
-    { id: "orders", label: "Commandes", icon: ShoppingBag },
-    { id: "users", label: "Utilisateurs", icon: Users },
-    { id: "articles", label: "Actualités", icon: Package },
-    { id: "promotions", label: "Promotions", icon: Tag },
+    { id: "dashboard", label: mt.dashboard, icon: LayoutDashboard },
+    { id: "products", label: mt.products, icon: Package },
+    { id: "categories", label: mt.categories, icon: FolderTree },
+    { id: "orders", label: mt.orders, icon: ShoppingBag },
+    { id: "users", label: mt.users, icon: Users },
+    { id: "articles", label: mt.articles, icon: Package },
+    { id: "promotions", label: mt.promotions, icon: Tag },
   ];
 
   if (loading) {
