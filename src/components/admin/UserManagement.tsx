@@ -38,6 +38,9 @@ interface UserWithRoles {
   roles: AppRole[];
 }
 
+// Super admin ID that cannot be modified
+const SUPER_ADMIN_ID = '24cc1ed2-040f-4ad7-8413-a416518fb684';
+
 const UserManagement = () => {
   const { language } = useLanguage();
   const [users, setUsers] = useState<UserWithRoles[]>([]);
@@ -262,6 +265,15 @@ const UserManagement = () => {
         return;
       }
 
+      // Prevent role modification for super admin
+      if (editingUser.id === SUPER_ADMIN_ID) {
+        toast.success(t.userUpdated);
+        setIsDialogOpen(false);
+        resetForm();
+        fetchUsers();
+        return;
+      }
+
       // Update roles - delete existing and insert new
       await supabase.from("user_roles").delete().eq("user_id", editingUser.id);
       
@@ -314,6 +326,12 @@ const UserManagement = () => {
   };
 
   const handleDelete = async (userId: string) => {
+    // Prevent deletion of super admin
+    if (userId === SUPER_ADMIN_ID) {
+      toast.error("Impossible de supprimer le compte Super Admin");
+      return;
+    }
+
     if (!confirm(t.confirmDelete)) return;
 
     // Delete user roles
@@ -329,6 +347,8 @@ const UserManagement = () => {
       fetchUsers();
     }
   };
+
+  const isSuperAdmin = (userId: string) => userId === SUPER_ADMIN_ID;
 
   const resetForm = () => {
     setEditingUser(null);
@@ -580,7 +600,12 @@ const UserManagement = () => {
             <tbody>
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="border-t border-border">
-                  <td className="py-3 px-4 font-medium">{user.first_name || "-"}</td>
+                  <td className="py-3 px-4 font-medium">
+                    {user.first_name || "-"}
+                    {user.id === SUPER_ADMIN_ID && (
+                      <span className="ml-2 text-xs text-primary font-semibold">(Super Admin)</span>
+                    )}
+                  </td>
                   <td className="py-3 px-4">{user.last_name || "-"}</td>
                   <td className="py-3 px-4 text-muted-foreground">{user.phone || "-"}</td>
                   <td className="py-3 px-4">
@@ -596,9 +621,11 @@ const UserManagement = () => {
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
                         <Edit size={16} />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)}>
-                        <Trash2 size={16} className="text-destructive" />
-                      </Button>
+                      {user.id !== SUPER_ADMIN_ID && (
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)}>
+                          <Trash2 size={16} className="text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

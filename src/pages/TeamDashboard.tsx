@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -29,6 +30,7 @@ import { cn } from "@/lib/utils";
 
 const TeamDashboard = () => {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const [isModerator, setIsModerator] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -213,8 +215,15 @@ const TeamDashboard = () => {
       
       <div className="container mx-auto px-4 py-24">
         <div className="mb-8">
-          <h1 className="text-3xl font-display font-bold text-foreground">Espace Modération</h1>
-          <p className="text-muted-foreground">Gérez les articles et commentaires de la communauté</p>
+          <h1 className="text-3xl font-display font-bold text-foreground">
+            {language === 'fr' ? 'Espace Modération' : language === 'en' ? 'Moderation Space' : language === 'de' ? 'Moderationsbereich' : 'Espacio de Moderación'}
+          </h1>
+          <p className="text-muted-foreground">
+            {language === 'fr' ? 'Gérez les articles et commentaires de la communauté' : 
+             language === 'en' ? 'Manage community articles and comments' :
+             language === 'de' ? 'Verwalten Sie Community-Artikel und Kommentare' : 
+             'Gestiona los artículos y comentarios de la comunidad'}
+          </p>
         </div>
 
         {/* Stats */}

@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -31,6 +32,7 @@ import Footer from "@/components/Footer";
 
 const AuthorDashboard = () => {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const [articles, setArticles] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -254,12 +256,19 @@ const AuthorDashboard = () => {
       <div className="container mx-auto px-4 py-24">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-display font-bold text-foreground">Espace Auteur</h1>
-            <p className="text-muted-foreground">Gérez vos articles et suivez vos statistiques</p>
+            <h1 className="text-3xl font-display font-bold text-foreground">
+              {language === 'fr' ? 'Espace Auteur' : language === 'en' ? 'Author Space' : language === 'de' ? 'Autorenbereich' : 'Espacio del Autor'}
+            </h1>
+            <p className="text-muted-foreground">
+              {language === 'fr' ? 'Gérez vos articles et suivez vos statistiques' :
+               language === 'en' ? 'Manage your articles and track your statistics' :
+               language === 'de' ? 'Verwalten Sie Ihre Artikel und verfolgen Sie Ihre Statistiken' :
+               'Gestiona tus artículos y sigue tus estadísticas'}
+            </p>
           </div>
           <Button variant="hero" onClick={() => { resetForm(); setIsDialogOpen(true); }}>
             <Plus size={18} />
-            Nouvel article
+            {language === 'fr' ? 'Nouvel article' : language === 'en' ? 'New article' : language === 'de' ? 'Neuer Artikel' : 'Nuevo artículo'}
           </Button>
         </div>
 

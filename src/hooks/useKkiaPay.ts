@@ -150,13 +150,13 @@ export const useKkiaPay = () => {
     window.addKkiapayListener?.('success', handleSuccess);
     window.addKkiapayListener?.('failed', handleFailed);
 
-    // Open widget with public key from environment
+    // Open widget with public key - PRODUCTION MODE
     const publicKey = '193bbb7e7387d1c3ac16ced9d47fe52fad2b228e';
     
     window.openKkiapayWidget({
       amount: config.amount,
       key: publicKey,
-      sandbox: true, // Set to false for production
+      sandbox: false, // Production mode - real payments
       data: JSON.stringify({
         orderId,
         paymentId: payment.id,
