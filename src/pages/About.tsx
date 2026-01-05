@@ -26,7 +26,7 @@ const About = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-gradient-hero">
+      <section className="pt-24 pb-16 bg-primary">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center text-primary-foreground">
             <h1 className="text-4xl lg:text-5xl font-display font-bold mb-6">
@@ -107,7 +107,7 @@ const About = () => {
                 key={index}
                 className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <div className="aspect-[3/4] bg-gradient-primary flex items-center justify-center overflow-hidden">
+                <div className="aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden">
                   {member.image ? (
                     <img 
                       src={member.image} 
@@ -129,7 +129,7 @@ const About = () => {
       </section>
 
       {/* Stats */}
-      <section className="py-20 bg-gradient-hero">
+      <section className="py-20 bg-primary">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>

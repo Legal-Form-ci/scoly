@@ -35,7 +35,7 @@ const Logo = ({ variant = "default", size = "md", showSlogan = false }: LogoProp
       <div className="flex items-center gap-2">
         {/* Logo Icon - Modern Book + Shopping design */}
         <div className="relative">
-          <div className={`relative flex items-center justify-center rounded-xl bg-gradient-primary shadow-glow ${size === "lg" ? "p-2.5" : size === "sm" ? "p-1.5" : "p-2"}`}>
+          <div className={`relative flex items-center justify-center rounded-xl bg-primary shadow-glow ${size === "lg" ? "p-2.5" : size === "sm" ? "p-1.5" : "p-2"}`}>
             <BookOpen 
               size={iconSizes[size]} 
               className="text-primary-foreground" 

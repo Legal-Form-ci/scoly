@@ -150,7 +150,7 @@ const FAQ = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-gradient-to-br from-primary/10 via-background to-secondary/10">
+      <section className="pt-24 pb-16 bg-muted">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <Badge className="mb-4">Centre d'aide</Badge>

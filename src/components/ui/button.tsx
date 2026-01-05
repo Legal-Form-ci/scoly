@@ -22,13 +22,13 @@ const buttonVariants = cva(
         link: 
           "text-primary underline-offset-4 hover:underline",
         hero:
-          "bg-gradient-to-r from-primary to-primary-light text-primary-foreground shadow-lg hover:shadow-glow hover:scale-[1.02] active:scale-[0.98]",
+          "bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-glow hover:scale-[1.02] active:scale-[0.98]",
         heroOutline:
-          "border-2 border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:border-white/50",
+          "border-2 border-primary/25 bg-background/70 text-foreground backdrop-blur-sm hover:bg-muted hover:border-primary/35",
         accent:
           "bg-accent text-accent-foreground shadow-gold hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98]",
         coral:
-          "bg-gradient-to-r from-secondary to-secondary-light text-secondary-foreground shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
+          "bg-secondary text-secondary-foreground shadow-md hover:bg-secondary/90 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
       },
       size: {
         default: "h-11 px-6 py-2",

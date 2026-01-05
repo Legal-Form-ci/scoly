@@ -659,74 +659,113 @@ export type Database = {
       }
       products: {
         Row: {
+          author_details: string | null
+          author_name: string | null
+          brand: string | null
           category_id: string | null
+          color: string | null
           created_at: string | null
           description_de: string | null
           description_en: string | null
           description_es: string | null
           description_fr: string | null
+          dimensions: string | null
           discount_percent: number | null
+          education_level: string | null
+          education_series: string | null
           free_shipping: boolean | null
           id: string
           image_url: string | null
           images: string[] | null
           is_active: boolean | null
           is_featured: boolean | null
+          is_office_supply: boolean | null
+          material: string | null
+          model: string | null
           name_de: string
           name_en: string
           name_es: string
           name_fr: string
           original_price: number | null
           price: number
+          product_genre: string | null
+          product_type: string | null
           stock: number | null
+          subject: string | null
           updated_at: string | null
           vendor_id: string | null
         }
         Insert: {
+          author_details?: string | null
+          author_name?: string | null
+          brand?: string | null
           category_id?: string | null
+          color?: string | null
           created_at?: string | null
           description_de?: string | null
           description_en?: string | null
           description_es?: string | null
           description_fr?: string | null
+          dimensions?: string | null
           discount_percent?: number | null
+          education_level?: string | null
+          education_series?: string | null
           free_shipping?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_office_supply?: boolean | null
+          material?: string | null
+          model?: string | null
           name_de: string
           name_en: string
           name_es: string
           name_fr: string
           original_price?: number | null
           price: number
+          product_genre?: string | null
+          product_type?: string | null
           stock?: number | null
+          subject?: string | null
           updated_at?: string | null
           vendor_id?: string | null
         }
         Update: {
+          author_details?: string | null
+          author_name?: string | null
+          brand?: string | null
           category_id?: string | null
+          color?: string | null
           created_at?: string | null
           description_de?: string | null
           description_en?: string | null
           description_es?: string | null
           description_fr?: string | null
+          dimensions?: string | null
           discount_percent?: number | null
+          education_level?: string | null
+          education_series?: string | null
           free_shipping?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_office_supply?: boolean | null
+          material?: string | null
+          model?: string | null
           name_de?: string
           name_en?: string
           name_es?: string
           name_fr?: string
           original_price?: number | null
           price?: number
+          product_genre?: string | null
+          product_type?: string | null
           stock?: number | null
+          subject?: string | null
           updated_at?: string | null
           vendor_id?: string | null
         }

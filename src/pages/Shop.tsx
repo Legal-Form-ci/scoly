@@ -141,7 +141,7 @@ const Shop = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gradient-primary">
+      <section className="pt-24 pb-12 bg-primary">
         <div className="container mx-auto px-4">
           <div className="text-center text-primary-foreground">
             <h1 className="text-4xl lg:text-5xl font-display font-bold mb-4">

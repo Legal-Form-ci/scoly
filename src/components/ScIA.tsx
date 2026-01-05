@@ -297,11 +297,11 @@ const ScIA = () => {
           >
             <Button
               onClick={() => setIsOpen(true)}
-              className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 group"
+              className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 group"
             >
               <div className="relative">
                 <Bot className="h-6 w-6 transition-transform group-hover:scale-110" />
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-emerald-500 rounded-full border-2 border-background animate-pulse" />
               </div>
             </Button>
             <motion.div
