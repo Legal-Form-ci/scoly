@@ -107,7 +107,7 @@ const Actualites = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gradient-hero">
+      <section className="pt-24 pb-12 bg-primary">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center text-primary-foreground">
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -192,7 +192,7 @@ const Actualites = () => {
               {filteredArticles.map((article) => (
                 <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                   <CardHeader className="p-0">
-                    <div className="aspect-video bg-gradient-to-br from-primary to-secondary relative overflow-hidden">
+                    <div className="aspect-video bg-muted relative overflow-hidden">
                       {article.cover_image ? (
                         <img 
                           src={article.cover_image} 

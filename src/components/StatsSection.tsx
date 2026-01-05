@@ -112,7 +112,7 @@ const StatsSection = () => {
   ];
 
   return (
-    <section className="py-16 bg-gradient-primary relative overflow-hidden">
+    <section className="py-16 bg-primary relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div 

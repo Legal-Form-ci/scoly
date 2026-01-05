@@ -35,8 +35,20 @@ import Footer from "@/components/Footer";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import UserManagement from "@/components/admin/UserManagement";
 import ProductForm from "@/components/admin/ProductForm";
+import AuthorsManagement from "@/components/admin/AuthorsManagement";
+import PublicationsReview from "@/components/admin/PublicationsReview";
 
-type TabType = "dashboard" | "products" | "categories" | "orders" | "users" | "articles" | "promotions" | "notifications";
+type TabType =
+  | "dashboard"
+  | "products"
+  | "categories"
+  | "orders"
+  | "users"
+  | "articles"
+  | "authors"
+  | "review"
+  | "promotions"
+  | "notifications";
 
 const Admin = () => {
   const { t, language } = useLanguage();
@@ -75,10 +87,10 @@ const Admin = () => {
 
   // Translated menu items
   const menuTexts = {
-    fr: { dashboard: "Tableau de bord", products: "Produits", categories: "Catégories", orders: "Commandes", users: "Utilisateurs", articles: "Actualités", promotions: "Promotions" },
-    en: { dashboard: "Dashboard", products: "Products", categories: "Categories", orders: "Orders", users: "Users", articles: "News", promotions: "Promotions" },
-    de: { dashboard: "Dashboard", products: "Produkte", categories: "Kategorien", orders: "Bestellungen", users: "Benutzer", articles: "Nachrichten", promotions: "Aktionen" },
-    es: { dashboard: "Panel", products: "Productos", categories: "Categorías", orders: "Pedidos", users: "Usuarios", articles: "Noticias", promotions: "Promociones" },
+    fr: { dashboard: "Tableau de bord", products: "Produits", categories: "Catégories", orders: "Commandes", users: "Utilisateurs", authors: "Auteurs", review: "Validation", articles: "Actualités", promotions: "Promotions" },
+    en: { dashboard: "Dashboard", products: "Products", categories: "Categories", orders: "Orders", users: "Users", authors: "Authors", review: "Review", articles: "News", promotions: "Promotions" },
+    de: { dashboard: "Dashboard", products: "Produkte", categories: "Kategorien", orders: "Bestellungen", users: "Benutzer", authors: "Autoren", review: "Prüfung", articles: "Nachrichten", promotions: "Aktionen" },
+    es: { dashboard: "Panel", products: "Productos", categories: "Categorías", orders: "Pedidos", users: "Usuarios", authors: "Autores", review: "Validación", articles: "Noticias", promotions: "Promociones" },
   };
   const mt = menuTexts[language as keyof typeof menuTexts] || menuTexts.fr;
 
@@ -88,6 +100,8 @@ const Admin = () => {
     { id: "categories", label: mt.categories, icon: FolderTree },
     { id: "orders", label: mt.orders, icon: ShoppingBag },
     { id: "users", label: mt.users, icon: Users },
+    { id: "authors", label: mt.authors, icon: Users },
+    { id: "review", label: mt.review, icon: Eye },
     { id: "articles", label: mt.articles, icon: Package },
     { id: "promotions", label: mt.promotions, icon: Tag },
   ];
@@ -160,6 +174,8 @@ const Admin = () => {
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "orders" && <OrdersTab />}
           {activeTab === "users" && <UserManagement />}
+          {activeTab === "authors" && <AuthorsManagement />}
+          {activeTab === "review" && <PublicationsReview />}
           {activeTab === "articles" && <ArticlesTab />}
           {activeTab === "promotions" && <PromotionsTab />}
         </div>

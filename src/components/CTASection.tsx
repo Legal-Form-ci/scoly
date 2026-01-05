@@ -34,7 +34,7 @@ const CTASection = () => {
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-4 relative">
-        <div className="max-w-4xl mx-auto bg-gradient-hero rounded-3xl p-8 lg:p-16 text-center relative overflow-hidden">
+        <div className="max-w-4xl mx-auto bg-primary rounded-3xl p-8 lg:p-16 text-center relative overflow-hidden">
           {/* Decorative Elements */}
           <div className="absolute top-4 right-4 text-accent/30">
             <Sparkles size={48} />
