@@ -620,9 +620,9 @@ const AdminDashboard = () => {
                   <div key={product.name} className="flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
                     <div className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm",
-                      index === 0 ? "bg-gradient-to-br from-amber-400 to-amber-600 text-white" : 
-                      index === 1 ? "bg-gradient-to-br from-gray-300 to-gray-500 text-white" :
-                      index === 2 ? "bg-gradient-to-br from-amber-600 to-amber-800 text-white" : "bg-muted text-muted-foreground"
+                      index === 0 ? "bg-amber-500 text-white" : 
+                      index === 1 ? "bg-gray-400 text-white" :
+                      index === 2 ? "bg-amber-700 text-white" : "bg-muted text-muted-foreground"
                     )}>
                       {index + 1}
                     </div>
@@ -749,10 +749,10 @@ interface StatsCardProps {
 
 const StatsCard = ({ title, value, subtitle, icon, trend, color }: StatsCardProps) => {
   const colorClasses = {
-    primary: "bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20",
-    blue: "bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20",
-    purple: "bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20",
-    emerald: "bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20",
+    primary: "bg-primary/10 border-primary/20",
+    blue: "bg-blue-500/10 border-blue-500/20",
+    purple: "bg-purple-500/10 border-purple-500/20",
+    emerald: "bg-emerald-500/10 border-emerald-500/20",
   };
 
   const iconColors = {

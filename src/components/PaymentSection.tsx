@@ -43,7 +43,7 @@ const PaymentSection = () => {
           {/* Right Visual - Payment Methods Display */}
           <div className="relative">
             {/* Background Decoration */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 rounded-3xl blur-3xl" />
+            <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-3xl" />
             
             {/* Card */}
             <div className="relative bg-card rounded-3xl border border-border p-8 shadow-lg">
