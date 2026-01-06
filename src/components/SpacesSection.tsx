@@ -143,17 +143,15 @@ const SpaceCard = ({ id, icon, title, subtitle, description, features, stats, gr
       id={id}
       className="group relative bg-card rounded-3xl border border-border overflow-hidden hover:shadow-lg transition-all duration-500 hover:-translate-y-2"
     >
-      {/* Gradient Header */}
-      <div className={`h-40 bg-gradient-to-br ${gradient} relative overflow-hidden`}>
-        <div className="absolute inset-0 bg-black/10" />
-        <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-        <div className="absolute -top-8 -left-8 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+      {/* Solid Color Header */}
+      <div className="h-40 bg-primary relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/5" />
         
         <div className="relative h-full flex flex-col items-center justify-center">
-          <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-sm text-white mb-2">
+          <div className="p-4 rounded-2xl bg-primary-foreground/20 backdrop-blur-sm text-primary-foreground mb-2">
             {icon}
           </div>
-          <span className="text-white/90 text-sm font-medium">{subtitle}</span>
+          <span className="text-primary-foreground/90 text-sm font-medium">{subtitle}</span>
         </div>
       </div>
 
@@ -188,7 +186,7 @@ const SpaceCard = ({ id, icon, title, subtitle, description, features, stats, gr
       </div>
 
       {/* Hover Effect */}
-      <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
     </div>
   );
 };

@@ -330,7 +330,7 @@ const ScIA = () => {
             )}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-primary/80 p-4 text-primary-foreground">
+            <div className="bg-primary p-4 text-primary-foreground">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
@@ -450,7 +450,7 @@ const ScIA = () => {
                       "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
                       message.role === "user" 
                         ? "bg-primary text-primary-foreground" 
-                        : "bg-gradient-to-br from-primary/20 to-secondary/20"
+                        : "bg-primary/20"
                     )}>
                       {message.role === "user" ? <User size={16} /> : <Bot size={16} />}
                     </div>

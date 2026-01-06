@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, User, AtSign } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, AtSign, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,9 +22,10 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passwordStrength, setPasswordStrength] = useState<{ score: number; checks: boolean[] }>({ score: 0, checks: [] });
 
   const { signIn, signUp, user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,20 +34,108 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
+  // Enhanced password validation rules
+  const passwordRules = {
+    minLength: 8,
+    hasUppercase: /[A-Z]/,
+    hasLowercase: /[a-z]/,
+    hasNumber: /[0-9]/,
+    hasSpecial: /[!@#$%^&*(),.?":{}|<>]/,
+  };
+
+  const passwordMessages = {
+    fr: {
+      minLength: "Au moins 8 caractères",
+      hasUppercase: "Au moins une majuscule",
+      hasLowercase: "Au moins une minuscule", 
+      hasNumber: "Au moins un chiffre",
+      hasSpecial: "Au moins un caractère spécial (!@#$%...)",
+      leaked: "Ce mot de passe a été compromis. Choisissez-en un autre.",
+      weak: "Mot de passe trop faible",
+      medium: "Mot de passe moyen",
+      strong: "Mot de passe fort",
+      mismatch: "Les mots de passe ne correspondent pas",
+    },
+    en: {
+      minLength: "At least 8 characters",
+      hasUppercase: "At least one uppercase letter",
+      hasLowercase: "At least one lowercase letter",
+      hasNumber: "At least one number",
+      hasSpecial: "At least one special character (!@#$%...)",
+      leaked: "This password has been compromised. Please choose another.",
+      weak: "Weak password",
+      medium: "Medium password",
+      strong: "Strong password",
+      mismatch: "Passwords do not match",
+    },
+    de: {
+      minLength: "Mindestens 8 Zeichen",
+      hasUppercase: "Mindestens ein Großbuchstabe",
+      hasLowercase: "Mindestens ein Kleinbuchstabe",
+      hasNumber: "Mindestens eine Zahl",
+      hasSpecial: "Mindestens ein Sonderzeichen (!@#$%...)",
+      leaked: "Dieses Passwort wurde kompromittiert. Wählen Sie ein anderes.",
+      weak: "Schwaches Passwort",
+      medium: "Mittleres Passwort",
+      strong: "Starkes Passwort",
+      mismatch: "Passwörter stimmen nicht überein",
+    },
+    es: {
+      minLength: "Al menos 8 caracteres",
+      hasUppercase: "Al menos una mayúscula",
+      hasLowercase: "Al menos una minúscula",
+      hasNumber: "Al menos un número",
+      hasSpecial: "Al menos un carácter especial (!@#$%...)",
+      leaked: "Esta contraseña ha sido comprometida. Elija otra.",
+      weak: "Contraseña débil",
+      medium: "Contraseña media",
+      strong: "Contraseña fuerte",
+      mismatch: "Las contraseñas no coinciden",
+    },
+  };
+
+  const pwdMsg = passwordMessages[language] || passwordMessages.fr;
+
+  // Check password strength in real-time
+  useEffect(() => {
+    if (!isLogin && password) {
+      const checks = [
+        password.length >= passwordRules.minLength,
+        passwordRules.hasUppercase.test(password),
+        passwordRules.hasLowercase.test(password),
+        passwordRules.hasNumber.test(password),
+        passwordRules.hasSpecial.test(password),
+      ];
+      const score = checks.filter(Boolean).length;
+      setPasswordStrength({ score, checks });
+    }
+  }, [password, isLogin]);
+
+  const getPasswordStrengthLabel = () => {
+    if (passwordStrength.score <= 2) return { label: pwdMsg.weak, color: "text-destructive" };
+    if (passwordStrength.score <= 3) return { label: pwdMsg.medium, color: "text-yellow-600" };
+    return { label: pwdMsg.strong, color: "text-green-600" };
+  };
+
   const loginSchema = z.object({
     identifier: z.string().min(1, t.common.required),
-    password: z.string().min(6, t.common.required),
+    password: z.string().min(1, t.common.required),
   });
 
   const signupSchema = z.object({
     email: z.string().email(t.common.error).max(255),
-    password: z.string().min(6, t.common.required),
+    password: z.string()
+      .min(8, pwdMsg.minLength)
+      .refine((val) => passwordRules.hasUppercase.test(val), pwdMsg.hasUppercase)
+      .refine((val) => passwordRules.hasLowercase.test(val), pwdMsg.hasLowercase)
+      .refine((val) => passwordRules.hasNumber.test(val), pwdMsg.hasNumber)
+      .refine((val) => passwordRules.hasSpecial.test(val), pwdMsg.hasSpecial),
     confirmPassword: z.string(),
     firstName: z.string().max(100).optional(),
     lastName: z.string().max(100).optional(),
     username: z.string().min(3).max(50).optional(),
   }).refine((data) => data.password === data.confirmPassword, {
-    message: t.common.error,
+    message: pwdMsg.mismatch,
     path: ["confirmPassword"],
   });
 
@@ -289,6 +378,51 @@ const Auth = () => {
               </div>
               {errors.password && (
                 <p className="text-sm text-destructive mt-1">{errors.password}</p>
+              )}
+              
+              {/* Password Strength Indicator */}
+              {!isLogin && password && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full transition-colors ${
+                          i <= passwordStrength.score
+                            ? passwordStrength.score <= 2
+                              ? "bg-destructive"
+                              : passwordStrength.score <= 3
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                            : "bg-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className={`text-xs font-medium ${getPasswordStrengthLabel().color}`}>
+                    {getPasswordStrengthLabel().label}
+                  </p>
+                  <div className="grid grid-cols-1 gap-1 text-xs">
+                    {[
+                      { check: passwordStrength.checks[0], label: pwdMsg.minLength },
+                      { check: passwordStrength.checks[1], label: pwdMsg.hasUppercase },
+                      { check: passwordStrength.checks[2], label: pwdMsg.hasLowercase },
+                      { check: passwordStrength.checks[3], label: pwdMsg.hasNumber },
+                      { check: passwordStrength.checks[4], label: pwdMsg.hasSpecial },
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5">
+                        {item.check ? (
+                          <CheckCircle size={12} className="text-green-500" />
+                        ) : (
+                          <AlertTriangle size={12} className="text-muted-foreground" />
+                        )}
+                        <span className={item.check ? "text-green-600" : "text-muted-foreground"}>
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 
