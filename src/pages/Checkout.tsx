@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle, Loader2, AlertCircle, MapPin, CreditCard } from "lucide-react";
+import { CheckCircle, Loader2, AlertCircle, MapPin, CreditCard, Tag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +66,16 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState("");
+  
+  // Coupon state
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    id: string;
+    code: string;
+    discount: number;
+  } | null>(null);
+  
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -79,6 +89,10 @@ const Checkout = () => {
     landmark: "",
     notes: "",
   });
+
+  // Calculate final total with discount
+  const discountAmount = appliedCoupon?.discount || 0;
+  const finalTotal = Math.max(0, total - discountAmount);
 
   // Check for payment success from URL
   useEffect(() => {
@@ -130,6 +144,55 @@ const Checkout = () => {
     return new Intl.NumberFormat('fr-FR').format(price) + ' ' + t.common.currency;
   };
 
+  // Apply coupon code
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('validate_coupon', {
+        _code: couponCode.toUpperCase().trim(),
+        _order_total: total
+      });
+
+      if (error) {
+        toast({
+          title: "Code invalide",
+          description: error.message || "Ce code promo n'est pas valide",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const couponData = data[0];
+        setAppliedCoupon({
+          id: couponData.coupon_id,
+          code: couponCode.toUpperCase().trim(),
+          discount: couponData.discount_value
+        });
+        toast({
+          title: "Code appliqué !",
+          description: `Vous économisez ${couponData.discount_value.toLocaleString()} FCFA`,
+        });
+        setCouponCode("");
+      }
+    } catch (error) {
+      console.error('Coupon error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de valider le code promo",
+        variant: "destructive",
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+  };
+
   const validateForm = () => {
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.region || !formData.city) {
       toast({
@@ -171,12 +234,14 @@ const Checkout = () => {
         formData.landmark ? `(Repère: ${formData.landmark})` : ''
       ].filter(Boolean).join(', ');
 
-      // Create order
+      // Create order with coupon info
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
-          total_amount: total,
+          total_amount: finalTotal,
+          discount_amount: discountAmount,
+          coupon_code: appliedCoupon?.code || null,
           shipping_address: fullAddress,
           phone: formData.phone,
           notes: formData.notes,
@@ -187,6 +252,28 @@ const Checkout = () => {
         .single();
 
       if (orderError) throw orderError;
+
+      // Record coupon redemption if applicable
+      if (appliedCoupon) {
+        await supabase.from('coupon_redemptions').insert({
+          coupon_id: appliedCoupon.id,
+          user_id: user.id,
+          order_id: order.id,
+          discount_amount: discountAmount
+        });
+        
+        // Increment coupon used_count via direct update
+        const { data: currentCoupon } = await supabase
+          .from('coupons')
+          .select('used_count')
+          .eq('id', appliedCoupon.id)
+          .single();
+        
+        await supabase
+          .from('coupons')
+          .update({ used_count: (currentCoupon?.used_count || 0) + 1 })
+          .eq('id', appliedCoupon.id);
+      }
 
       // Create order items
       const orderItems = items.map(item => ({
@@ -227,7 +314,7 @@ const Checkout = () => {
 
     openPaymentWidget(
       {
-        amount: total,
+        amount: finalTotal,
         reason: `Commande Izy-scoly #${orderNumber}`,
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
@@ -556,18 +643,60 @@ const Checkout = () => {
                       ))}
                     </div>
 
+                    {/* Coupon Code Input */}
+                    <div className="border-t border-border pt-4 mb-4">
+                      <Label className="flex items-center gap-2 mb-2">
+                        <Tag size={16} className="text-primary" />
+                        Code promo
+                      </Label>
+                      {appliedCoupon ? (
+                        <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+                          <div>
+                            <p className="font-medium text-green-600">{appliedCoupon.code}</p>
+                            <p className="text-sm text-green-600">-{formatPrice(appliedCoupon.discount)}</p>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={removeCoupon}>
+                            <X size={16} />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            placeholder="PROMO2024"
+                            className="uppercase"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleApplyCoupon}
+                            disabled={couponLoading || !couponCode.trim()}
+                          >
+                            {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Appliquer"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="border-t border-border pt-4 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Sous-total</span>
                         <span>{formatPrice(total)}</span>
                       </div>
+                      {appliedCoupon && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Réduction ({appliedCoupon.code})</span>
+                          <span>-{formatPrice(discountAmount)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Livraison</span>
                         <span className="text-green-600 font-medium">Gratuite</span>
                       </div>
                       <div className="flex justify-between font-bold text-lg pt-2 border-t border-border">
                         <span>Total</span>
-                        <span className="text-primary">{formatPrice(total)}</span>
+                        <span className="text-primary">{formatPrice(finalTotal)}</span>
                       </div>
                     </div>
 

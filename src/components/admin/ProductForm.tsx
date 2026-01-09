@@ -466,13 +466,12 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       is_active: formData.is_active,
       is_featured: formData.is_featured,
 
-      product_type: formData.product_type,
+      product_type: formData.product_type || null,
       product_genre: formData.product_genre || null,
       education_level: formData.education_level || null,
       education_series: formData.education_series || null,
       author_name: formData.author_name || null,
       author_details: formData.author_details || null,
-      cycle: formData.cycle,
       subject: formData.subject || null,
 
       is_office_supply: formData.product_type === "office" ? true : formData.is_office_supply,
