@@ -37,6 +37,7 @@ import UserManagement from "@/components/admin/UserManagement";
 import ProductForm from "@/components/admin/ProductForm";
 import AuthorsManagement from "@/components/admin/AuthorsManagement";
 import PublicationsReview from "@/components/admin/PublicationsReview";
+import CouponManagement from "@/components/admin/CouponManagement";
 
 type TabType =
   | "dashboard"
@@ -177,7 +178,7 @@ const Admin = () => {
           {activeTab === "authors" && <AuthorsManagement />}
           {activeTab === "review" && <PublicationsReview />}
           {activeTab === "articles" && <ArticlesTab />}
-          {activeTab === "promotions" && <PromotionsTab />}
+          {activeTab === "promotions" && <CouponManagement />}
         </div>
       </div>
     </main>
@@ -864,124 +865,6 @@ const ArticlesTab = () => {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
-  );
-};
-
-// Promotions Tab
-const PromotionsTab = () => {
-  const [coupons, setCoupons] = useState<any[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    code: "",
-    discount_percent: "",
-    discount_amount: "",
-    min_order_amount: "",
-    max_uses: "",
-    valid_from: "",
-    valid_until: "",
-    is_active: true,
-  });
-
-  useEffect(() => {
-    fetchCoupons();
-  }, []);
-
-  const fetchCoupons = async () => {
-    const { data } = await supabase.from("coupons").select("*").order("created_at", { ascending: false });
-    setCoupons(data || []);
-  };
-
-  const handleSubmit = async () => {
-    const couponData = {
-      code: formData.code.toUpperCase(),
-      discount_percent: formData.discount_percent ? parseInt(formData.discount_percent) : null,
-      discount_amount: formData.discount_amount ? parseFloat(formData.discount_amount) : null,
-      min_order_amount: formData.min_order_amount ? parseFloat(formData.min_order_amount) : 0,
-      max_uses: formData.max_uses ? parseInt(formData.max_uses) : null,
-      valid_from: formData.valid_from || new Date().toISOString(),
-      valid_until: formData.valid_until || null,
-      is_active: formData.is_active,
-    };
-
-    const { error } = await supabase.from("coupons").insert(couponData);
-    if (error) toast.error("Erreur");
-    else { toast.success("Coupon créé"); setIsDialogOpen(false); fetchCoupons(); }
-  };
-
-  const toggleActive = async (id: string, current: boolean) => {
-    await supabase.from("coupons").update({ is_active: !current }).eq("id", id);
-    fetchCoupons();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer ce coupon ?")) return;
-    await supabase.from("coupons").delete().eq("id", id);
-    fetchCoupons();
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-display font-bold text-foreground">Promotions & Coupons</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="hero"><Plus size={18} />Créer un coupon</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nouveau coupon</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div><Label>Code *</Label><Input value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} placeholder="PROMO2024" /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Réduction (%)</Label><Input type="number" value={formData.discount_percent} onChange={(e) => setFormData({ ...formData, discount_percent: e.target.value })} /></div>
-                <div><Label>Réduction (FCFA)</Label><Input type="number" value={formData.discount_amount} onChange={(e) => setFormData({ ...formData, discount_amount: e.target.value })} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Min. commande</Label><Input type="number" value={formData.min_order_amount} onChange={(e) => setFormData({ ...formData, min_order_amount: e.target.value })} /></div>
-                <div><Label>Max. utilisations</Label><Input type="number" value={formData.max_uses} onChange={(e) => setFormData({ ...formData, max_uses: e.target.value })} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Valide à partir du</Label><Input type="date" value={formData.valid_from} onChange={(e) => setFormData({ ...formData, valid_from: e.target.value })} /></div>
-                <div><Label>Valide jusqu'au</Label><Input type="date" value={formData.valid_until} onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })} /></div>
-              </div>
-              <Button onClick={handleSubmit}>Créer</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {coupons.map((coupon) => (
-          <div key={coupon.id} className="bg-card rounded-xl border border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-mono text-lg font-bold bg-primary/10 text-primary px-3 py-1 rounded">
-                {coupon.code}
-              </span>
-              <Badge variant={coupon.is_active ? "default" : "secondary"}>
-                {coupon.is_active ? "Actif" : "Inactif"}
-              </Badge>
-            </div>
-            <div className="space-y-2 text-sm">
-              {coupon.discount_percent && <p>Réduction: {coupon.discount_percent}%</p>}
-              {coupon.discount_amount && <p>Réduction: {coupon.discount_amount.toLocaleString()} FCFA</p>}
-              <p className="text-muted-foreground">Utilisé: {coupon.used_count || 0} / {coupon.max_uses || "∞"}</p>
-              {coupon.valid_until && (
-                <p className="text-muted-foreground">Expire: {new Date(coupon.valid_until).toLocaleDateString()}</p>
-              )}
-            </div>
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" size="sm" onClick={() => toggleActive(coupon.id, coupon.is_active)}>
-                {coupon.is_active ? "Désactiver" : "Activer"}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => handleDelete(coupon.id)}>
-                <Trash2 size={14} className="text-destructive" />
-              </Button>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
