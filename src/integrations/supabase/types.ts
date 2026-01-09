@@ -382,6 +382,48 @@ export type Database = {
           },
         ]
       }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          discount_amount: number
+          id: string
+          order_id: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           code: string
@@ -540,7 +582,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          coupon_code: string | null
           created_at: string | null
+          discount_amount: number
           id: string
           notes: string | null
           payment_method: string | null
@@ -553,7 +597,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          coupon_code?: string | null
           created_at?: string | null
+          discount_amount?: number
           id?: string
           notes?: string | null
           payment_method?: string | null
@@ -566,7 +612,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          coupon_code?: string | null
           created_at?: string | null
+          discount_amount?: number
           id?: string
           notes?: string | null
           payment_method?: string | null
@@ -1097,6 +1145,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      validate_coupon: {
+        Args: { _code: string; _order_total: number }
+        Returns: {
+          coupon_id: string
+          discount_amount: number
+          discount_percent: number
+          discount_value: number
+        }[]
       }
     }
     Enums: {
