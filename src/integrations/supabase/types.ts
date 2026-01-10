@@ -466,6 +466,44 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          email_type: string
+          error_message: string | null
+          id: string
+          order_id: string | null
+          recipient_email: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          email_type: string
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          recipient_email: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faq: {
         Row: {
           answer_en: string | null
@@ -584,6 +622,11 @@ export type Database = {
         Row: {
           coupon_code: string | null
           created_at: string | null
+          customer_confirmed_at: string | null
+          delivery_delivered_at: string | null
+          delivery_notes: string | null
+          delivery_received_at: string | null
+          delivery_user_id: string | null
           discount_amount: number
           id: string
           notes: string | null
@@ -599,6 +642,11 @@ export type Database = {
         Insert: {
           coupon_code?: string | null
           created_at?: string | null
+          customer_confirmed_at?: string | null
+          delivery_delivered_at?: string | null
+          delivery_notes?: string | null
+          delivery_received_at?: string | null
+          delivery_user_id?: string | null
           discount_amount?: number
           id?: string
           notes?: string | null
@@ -614,6 +662,11 @@ export type Database = {
         Update: {
           coupon_code?: string | null
           created_at?: string | null
+          customer_confirmed_at?: string | null
+          delivery_delivered_at?: string | null
+          delivery_notes?: string | null
+          delivery_received_at?: string | null
+          delivery_user_id?: string | null
           discount_amount?: number
           id?: string
           notes?: string | null
@@ -1138,6 +1191,35 @@ export type Database = {
           total_revenue: number
           total_users: number
         }[]
+      }
+      get_delivery_orders: {
+        Args: { _delivery_user_id: string }
+        Returns: {
+          coupon_code: string | null
+          created_at: string | null
+          customer_confirmed_at: string | null
+          delivery_delivered_at: string | null
+          delivery_notes: string | null
+          delivery_received_at: string | null
+          delivery_user_id: string | null
+          discount_amount: number
+          id: string
+          notes: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          phone: string | null
+          shipping_address: string | null
+          status: Database["public"]["Enums"]["order_status"] | null
+          total_amount: number
+          updated_at: string | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       has_role: {
         Args: {
