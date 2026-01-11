@@ -118,55 +118,56 @@ const FeaturedProductsCarousel = () => {
 
         <div className="overflow-hidden" ref={carouselRef}>
           <div 
-            className="flex gap-6 transition-transform duration-500 ease-in-out"
+            className="flex gap-3 sm:gap-4 md:gap-6 transition-transform duration-500 ease-in-out"
             style={{ transform: `translateX(-${currentIndex * (100 / 4)}%)` }}
           >
             {products.map((product) => (
               <div
                 key={product.id}
-                className="flex-shrink-0 w-full sm:w-1/2 lg:w-1/4 group"
+                className="flex-shrink-0 w-[45%] sm:w-[48%] md:w-1/3 lg:w-1/4 group"
               >
-                <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all">
+                <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all h-full flex flex-col">
                   <Link to={`/product/${product.id}`} className="relative aspect-square block overflow-hidden">
                     {product.image_url ? (
                       <img
                         src={product.image_url}
                         alt={getLocalizedName(product)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <ShoppingCart size={48} className="text-muted-foreground" />
+                        <ShoppingCart size={32} className="text-muted-foreground" />
                       </div>
                     )}
                     {product.discount_percent > 0 && (
-                      <span className="absolute top-3 left-3 px-2 py-1 bg-destructive text-destructive-foreground text-xs font-medium rounded">
+                      <span className="absolute top-2 left-2 px-1.5 py-0.5 sm:px-2 sm:py-1 bg-destructive text-destructive-foreground text-[10px] sm:text-xs font-medium rounded">
                         -{product.discount_percent}%
                       </span>
                     )}
                     {product.is_featured && (
-                      <span className="absolute top-3 right-3 px-2 py-1 bg-accent text-accent-foreground text-xs font-medium rounded">
-                        Populaire
+                      <span className="absolute top-2 right-2 px-1.5 py-0.5 sm:px-2 sm:py-1 bg-accent text-accent-foreground text-[10px] sm:text-xs font-medium rounded">
+                        ⭐
                       </span>
                     )}
                   </Link>
-                  <div className="p-4">
+                  <div className="p-2 sm:p-3 md:p-4 flex flex-col flex-1">
                     <Link to={`/product/${product.id}`}>
-                      <h3 className="font-medium text-foreground hover:text-primary transition-colors line-clamp-2 mb-2">
+                      <h3 className="font-medium text-foreground hover:text-primary transition-colors line-clamp-2 text-xs sm:text-sm mb-1 sm:mb-2">
                         {getLocalizedName(product)}
                       </h3>
                     </Link>
-                    <div className="flex items-center gap-1 mb-2">
+                    <div className="flex items-center gap-0.5 mb-1 sm:mb-2">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={12} className="fill-accent text-accent" />
+                        <Star key={i} size={10} className="fill-accent text-accent sm:w-3 sm:h-3" />
                       ))}
                     </div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-lg font-bold text-primary">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 mb-2 sm:mb-3 mt-auto">
+                      <span className="text-sm sm:text-base md:text-lg font-bold text-primary">
                         {formatPrice(product.price)}
                       </span>
                       {product.original_price && product.original_price > product.price && (
-                        <span className="text-sm text-muted-foreground line-through">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
                           {formatPrice(product.original_price)}
                         </span>
                       )}
@@ -174,11 +175,12 @@ const FeaturedProductsCarousel = () => {
                     <Button
                       variant="hero"
                       size="sm"
-                      className="w-full"
+                      className="w-full text-xs sm:text-sm h-8 sm:h-9"
                       onClick={() => addToCart(product.id)}
                     >
-                      <ShoppingCart size={16} />
-                      Acheter
+                      <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Acheter</span>
+                      <span className="sm:hidden">+</span>
                     </Button>
                   </div>
                 </div>

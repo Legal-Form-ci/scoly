@@ -8,6 +8,7 @@ import PaymentSection from "@/components/PaymentSection";
 import StatsSection from "@/components/StatsSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
+import FreeShippingPopup from "@/components/FreeShippingPopup";
 
 const Index = () => {
   return (
@@ -22,6 +23,7 @@ const Index = () => {
       <PaymentSection />
       <CTASection />
       <Footer />
+      <FreeShippingPopup />
     </main>
   );
 };

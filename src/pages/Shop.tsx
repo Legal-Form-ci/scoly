@@ -272,12 +272,12 @@ const Shop = () => {
               </div>
 
               {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="bg-card rounded-xl p-4 animate-pulse">
-                      <div className="aspect-square bg-muted rounded-lg mb-4" />
-                      <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                      <div className="h-4 bg-muted rounded w-1/2" />
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="bg-card rounded-xl p-2 sm:p-4 animate-pulse">
+                      <div className="aspect-square bg-muted rounded-lg mb-2 sm:mb-4" />
+                      <div className="h-3 sm:h-4 bg-muted rounded w-3/4 mb-2" />
+                      <div className="h-3 sm:h-4 bg-muted rounded w-1/2" />
                     </div>
                   ))}
                 </div>
@@ -287,11 +287,11 @@ const Shop = () => {
                   <p className="text-muted-foreground">{t.common.noResults}</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                   {filteredProducts.map((product) => (
                     <div
                       key={product.id}
-                      className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all"
+                      className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all flex flex-col"
                     >
                       {/* Image */}
                       <Link to={`/shop/product/${product.id}`} className="relative aspect-square block overflow-hidden">
@@ -300,73 +300,80 @@ const Shop = () => {
                             src={product.image_url}
                             alt={getLocalizedName(product)}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-full h-full bg-muted flex items-center justify-center">
-                            <ShoppingCart size={48} className="text-muted-foreground" />
+                            <ShoppingCart size={32} className="text-muted-foreground" />
                           </div>
                         )}
                         
                         {/* Badges */}
-                        <div className="absolute top-3 left-3 flex flex-col gap-2">
+                        <div className="absolute top-2 left-2 flex flex-col gap-1">
                           {product.discount_percent > 0 && (
-                            <Badge variant="destructive">-{product.discount_percent}%</Badge>
+                            <Badge variant="destructive" className="text-[10px] sm:text-xs px-1.5 py-0.5">
+                              -{product.discount_percent}%
+                            </Badge>
                           )}
                           {product.is_featured && (
-                            <Badge variant="secondary">{t.shop.featured}</Badge>
+                            <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0.5">
+                              ⭐
+                            </Badge>
                           )}
                         </div>
 
                         {/* Free Shipping Badge */}
-                        <div className="absolute bottom-3 left-3">
-                          <Badge className="bg-green-500 text-white">
-                            <Truck size={12} className="mr-1" />
-                            Livraison gratuite
+                        <div className="absolute bottom-2 left-2">
+                          <Badge className="bg-green-500 text-white text-[9px] sm:text-[10px] px-1 py-0.5">
+                            <Truck size={10} className="mr-0.5" />
+                            <span className="hidden sm:inline">Livraison gratuite</span>
+                            <span className="sm:hidden">Gratuit</span>
                           </Badge>
                         </div>
 
                         {/* Wishlist Button */}
-                        <button className="absolute top-3 right-3 p-2 bg-card/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Heart size={18} className="text-foreground" />
+                        <button className="absolute top-2 right-2 p-1.5 sm:p-2 bg-card/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Heart size={14} className="text-foreground sm:w-[18px] sm:h-[18px]" />
                         </button>
                       </Link>
 
                       {/* Content */}
-                      <div className="p-4">
+                      <div className="p-2 sm:p-3 md:p-4 flex flex-col flex-1">
                         <Link to={`/shop/product/${product.id}`}>
-                          <h3 className="font-medium text-foreground hover:text-primary transition-colors line-clamp-2">
+                          <h3 className="font-medium text-foreground hover:text-primary transition-colors line-clamp-2 text-xs sm:text-sm">
                             {getLocalizedName(product)}
                           </h3>
                         </Link>
 
-                        <div className="flex items-center gap-1 mt-2">
+                        <div className="flex items-center gap-0.5 mt-1 sm:mt-2">
                           {[...Array(5)].map((_, i) => (
-                            <Star key={i} size={14} className="fill-accent text-accent" />
+                            <Star key={i} size={10} className="fill-accent text-accent sm:w-3.5 sm:h-3.5" />
                           ))}
-                          <span className="text-sm text-muted-foreground ml-1">(0)</span>
+                          <span className="text-[10px] sm:text-xs text-muted-foreground ml-1">(0)</span>
                         </div>
 
-                        <div className="flex items-center gap-2 mt-3">
-                          <span className="text-lg font-bold text-primary">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 mt-2 sm:mt-3">
+                          <span className="text-sm sm:text-base md:text-lg font-bold text-primary">
                             {formatPrice(product.price)}
                           </span>
                           {product.original_price && product.original_price > product.price && (
-                            <span className="text-sm text-muted-foreground line-through">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
                               {formatPrice(product.original_price)}
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2 mt-4">
+                        <div className="mt-auto pt-2 sm:pt-3">
                           <Button
                             variant="hero"
                             size="sm"
-                            className="flex-1"
+                            className="w-full text-xs sm:text-sm h-8 sm:h-9"
                             onClick={() => addToCart(product.id)}
                             disabled={product.stock === 0}
                           >
-                            <ShoppingCart size={16} />
-                            {product.stock === 0 ? t.shop.outOfStock : t.shop.addToCart}
+                            <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline">{product.stock === 0 ? t.shop.outOfStock : t.shop.addToCart}</span>
+                            <span className="sm:hidden">{product.stock === 0 ? 'Épuisé' : '+'}</span>
                           </Button>
                         </div>
                       </div>

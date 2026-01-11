@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ImageUpload from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -190,12 +191,12 @@ const WriteArticle = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="cover_image">URL de l'image de couverture</Label>
-                  <Input
-                    id="cover_image"
-                    placeholder="https://..."
+                  <Label>Image de couverture</Label>
+                  <ImageUpload
                     value={form.cover_image}
-                    onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
+                    onChange={(url) => setForm({ ...form, cover_image: url })}
+                    bucket="article-images"
+                    placeholder="Télécharger ou coller une URL"
                   />
                 </div>
               </CardContent>

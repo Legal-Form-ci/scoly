@@ -212,7 +212,7 @@ serve(async (req) => {
       error_message: emailResponse.ok ? null : JSON.stringify(emailData),
     });
 
-    return new Response(JSON.stringify({ success: true, emailId: emailResponse.id }), {
+    return new Response(JSON.stringify({ success: true, emailId: emailData.id }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
