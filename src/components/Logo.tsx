@@ -35,33 +35,41 @@ const Logo = ({ variant = "default", size = "md", showSlogan = false }: LogoProp
       <div className="flex items-center gap-2">
         {/* Logo Icon - Modern Book + Shopping design */}
         <div className="relative">
-          <div className={`relative flex items-center justify-center rounded-xl bg-primary shadow-glow ${size === "lg" ? "p-2.5" : size === "sm" ? "p-1.5" : "p-2"}`}>
-            <BookOpen 
-              size={iconSizes[size]} 
-              className="text-primary-foreground" 
-              strokeWidth={2.5}
-            />
+          <div
+            className={`relative flex items-center justify-center rounded-xl bg-primary shadow-glow ${
+              size === "lg" ? "p-2.5" : size === "sm" ? "p-1.5" : "p-2"
+            }`}
+          >
+            <BookOpen size={iconSizes[size]} className="text-primary-foreground" strokeWidth={2.5} />
           </div>
-          <div className={`absolute -bottom-0.5 -right-0.5 rounded-full bg-secondary flex items-center justify-center shadow-sm ${size === "lg" ? "w-4 h-4" : size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"}`}>
-            <ShoppingBag 
-              size={size === "lg" ? 10 : size === "sm" ? 7 : 8} 
-              className="text-secondary-foreground" 
+          <div
+            className={`absolute -bottom-0.5 -right-0.5 rounded-full bg-secondary flex items-center justify-center shadow-sm ${
+              size === "lg" ? "w-4 h-4" : size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"
+            }`}
+          >
+            <ShoppingBag
+              size={size === "lg" ? 10 : size === "sm" ? 7 : 8}
+              className="text-secondary-foreground"
               strokeWidth={2.5}
             />
           </div>
         </div>
-        
+
         {/* Logo Text */}
         <div className="flex flex-col leading-none">
           <span className={`font-display font-bold ${sizeClasses[size]} ${colorClasses[variant]}`}>
-            Izy-scoly
+            Izy-Scoly
           </span>
         </div>
       </div>
-      
+
       {/* Slogan below logo - compact and aligned */}
       {showSlogan && (
-        <span className={`${sloganSizes[size]} ${variant === "white" ? "text-primary-foreground/80" : "text-muted-foreground"} mt-0.5 font-medium tracking-tight whitespace-nowrap`}>
+        <span
+          className={`${sloganSizes[size]} ${
+            variant === "white" ? "text-primary-foreground/80" : "text-muted-foreground"
+          } mt-0.5 font-medium tracking-tight whitespace-nowrap`}
+        >
           Scolaire & Bureautique - Livraison gratuite
         </span>
       )}
