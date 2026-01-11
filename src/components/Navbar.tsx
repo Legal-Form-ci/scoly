@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, ShoppingCart, User, LogOut, ChevronDown } from "lucide-react";
+import { Menu, X, ShoppingCart, User, LogOut, ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import Logo from "./Logo";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
+import GlobalSearch from "./GlobalSearch";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const { t } = useLanguage();
   const { user, signOut, isAdmin } = useAuth();
   const { itemCount: cartCount } = useCart();
@@ -38,20 +41,35 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
-                className="text-foreground/80 hover:text-primary font-medium transition-colors"
+                className="text-foreground/80 hover:text-primary font-medium transition-colors text-sm"
               >
                 {item.label}
               </Link>
             ))}
           </div>
 
+          {/* Search - Desktop */}
+          <div className="hidden md:block flex-1 max-w-md mx-4">
+            <GlobalSearch />
+          </div>
+
           {/* Right Section */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Search Toggle - Mobile */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setShowSearch(!showSearch)}
+            >
+              <Search size={20} />
+            </Button>
+            
             <LanguageSwitcher />
             
             {/* Cart */}
@@ -113,6 +131,13 @@ const Navbar = () => {
             </Button>
           </div>
         </div>
+
+        {/* Mobile Search */}
+        {showSearch && (
+          <div className="md:hidden py-3 border-t border-border">
+            <GlobalSearch />
+          </div>
+        )}
 
         {/* Mobile Menu */}
         {isOpen && (
