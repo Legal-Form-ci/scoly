@@ -1,18 +1,18 @@
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Share2 } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Share2, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const Footer = () => {
   const { t } = useLanguage();
-  
+
   const links = {
     categories: [
-      { label: "Izy-scoly Primaire", href: "/shop?category=scoly-primaire" },
-      { label: "Izy-scoly Secondaire", href: "/shop?category=scoly-secondaire" },
-      { label: "Izy-scoly Université", href: "/shop?category=scoly-universite" },
-      { label: "Izy-scoly Bureautique", href: "/shop?category=scoly-bureautique" },
-      { label: "Izy-scoly Librairie", href: "/shop?category=scoly-librairie" },
+      { label: "Izy-Scoly Primaire", href: "/shop?category=scoly-primaire" },
+      { label: "Izy-Scoly Secondaire", href: "/shop?category=scoly-secondaire" },
+      { label: "Izy-Scoly Université", href: "/shop?category=scoly-universite" },
+      { label: "Izy-Scoly Bureautique", href: "/shop?category=scoly-bureautique" },
+      { label: "Izy-Scoly Librairie", href: "/shop?category=scoly-librairie" },
     ],
     resources: [
       { label: "Actualités", href: "/actualites" },
@@ -69,11 +69,17 @@ const Footer = () => {
 
             {/* Contact Info */}
             <div className="mt-6 space-y-3">
-              <a href="mailto:contact@izy-scoly.ci" className="flex items-center gap-3 text-primary-foreground/80 hover:text-accent transition-colors">
+              <a
+                href="mailto:contact@izy-scoly.ci"
+                className="flex items-center gap-3 text-primary-foreground/80 hover:text-accent transition-colors"
+              >
                 <Mail size={18} />
                 contact@izy-scoly.ci
               </a>
-              <a href="tel:+2250759566087" className="flex items-center gap-3 text-primary-foreground/80 hover:text-accent transition-colors">
+              <a
+                href="tel:+2250759566087"
+                className="flex items-center gap-3 text-primary-foreground/80 hover:text-accent transition-colors"
+              >
                 <Phone size={18} />
                 +225 07 59 56 60 87
               </a>
@@ -126,33 +132,29 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-primary-foreground/20 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-center md:text-left">
-            <a 
+        <div className="pt-8 border-t border-primary-foreground/20">
+          <div className="text-center space-y-2">
+            <p className="text-primary-foreground/80 text-sm">
+              © {new Date().getFullYear()} Izy-Scoly. Tous droits réservés.
+            </p>
+            <a
               href="https://ikoffi.agricapital.ci"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-foreground/80 text-sm hover:text-accent transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 text-primary-foreground/60 text-xs hover:text-accent transition-colors"
             >
-              © {new Date().getFullYear()} Izy-scoly. {t.footer.copyright}
-            </a>
-            <a 
-              href="https://ikoffi.agricapital.ci"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-primary-foreground/60 text-xs mt-2 hover:text-accent transition-all duration-300 hover:scale-105 cursor-pointer"
-            >
-              <img 
-                src="/founder-inocent-koffi.jpg" 
-                alt="Inocent KOFFI" 
-                className="w-6 h-6 rounded-full object-cover border border-primary-foreground/30 hover:border-accent transition-colors"
+              <img
+                src="/founder-inocent-koffi.jpg"
+                alt="Inocent KOFFI"
+                className="w-6 h-6 rounded-full object-cover border border-primary-foreground/30"
+                loading="lazy"
               />
               <span>Plateforme développée par Inocent KOFFI</span>
             </a>
           </div>
 
           {/* Copyright mobile social links */}
-          <div className="flex items-center gap-4 md:hidden">
+          <div className="flex items-center justify-center gap-4 mt-6 md:hidden">
             {socials.map((social, index) => (
               <a
                 key={index}
