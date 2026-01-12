@@ -170,7 +170,7 @@ const HeroSection = () => {
                         À la une
                       </h2>
                       <p className="text-primary-foreground/80 text-sm mt-1">
-                        Promotions, partenaires, nouveautés — bientôt géré depuis l'admin.
+                        Promotions, partenaires, offres exclusives et nouveautés
                       </p>
                     </div>
                     <span className="inline-flex items-center rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1 text-xs text-primary-foreground/80">

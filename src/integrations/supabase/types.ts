@@ -1221,6 +1221,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_delivery_stats: {
+        Args: { _delivery_user_id: string }
+        Returns: {
+          delivered: number
+          in_transit: number
+          pending_pickup: number
+          total_assigned: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1239,7 +1248,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user" | "vendor"
+      app_role: "admin" | "moderator" | "user" | "vendor" | "delivery"
       order_status:
         | "pending"
         | "confirmed"
@@ -1374,7 +1383,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user", "vendor"],
+      app_role: ["admin", "moderator", "user", "vendor", "delivery"],
       order_status: [
         "pending",
         "confirmed",

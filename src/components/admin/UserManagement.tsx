@@ -12,7 +12,8 @@ import {
   Mail,
   Phone,
   Eye,
-  EyeOff
+  EyeOff,
+  Truck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-type AppRole = 'admin' | 'moderator' | 'user' | 'vendor';
+type AppRole = 'admin' | 'moderator' | 'user' | 'vendor' | 'delivery';
 
 interface UserWithRoles {
   id: string;
@@ -84,10 +85,12 @@ const UserManagement = () => {
       admins: "Administrateurs",
       moderators: "Modérateurs",
       vendors: "Vendeurs",
+      deliverers: "Livreurs",
       roleAdmin: "Administrateur",
       roleModerator: "Modérateur",
       roleUser: "Utilisateur",
       roleVendor: "Vendeur",
+      roleDelivery: "Livreur",
       noUsers: "Aucun utilisateur trouvé",
       passwordHint: "Min. 8 caractères",
     },
@@ -116,10 +119,12 @@ const UserManagement = () => {
       admins: "Admins",
       moderators: "Moderators",
       vendors: "Vendors",
+      deliverers: "Deliverers",
       roleAdmin: "Admin",
       roleModerator: "Moderator",
       roleUser: "User",
       roleVendor: "Vendor",
+      roleDelivery: "Delivery",
       noUsers: "No users found",
       passwordHint: "Min. 8 characters",
     },
@@ -148,10 +153,12 @@ const UserManagement = () => {
       admins: "Administratoren",
       moderators: "Moderatoren",
       vendors: "Verkäufer",
+      deliverers: "Lieferanten",
       roleAdmin: "Admin",
       roleModerator: "Moderator",
       roleUser: "Benutzer",
       roleVendor: "Verkäufer",
+      roleDelivery: "Lieferant",
       noUsers: "Keine Benutzer gefunden",
       passwordHint: "Mind. 8 Zeichen",
     },
@@ -180,10 +187,12 @@ const UserManagement = () => {
       admins: "Administradores",
       moderators: "Moderadores",
       vendors: "Vendedores",
+      deliverers: "Repartidores",
       roleAdmin: "Admin",
       roleModerator: "Moderador",
       roleUser: "Usuario",
       roleVendor: "Vendedor",
+      roleDelivery: "Repartidor",
       noUsers: "No se encontraron usuarios",
       passwordHint: "Mín. 8 caracteres",
     },
@@ -278,11 +287,17 @@ const UserManagement = () => {
       await supabase.from("user_roles").delete().eq("user_id", editingUser.id);
       
       if (formData.roles.length > 0) {
-        const roleInserts = formData.roles.map(role => ({
+        // Filter to only valid DB roles (exclude 'delivery' if not in DB yet)
+        const validDbRoles = formData.roles.filter(role => 
+          ['admin', 'moderator', 'user', 'vendor', 'delivery'].includes(role)
+        );
+        const roleInserts = validDbRoles.map(role => ({
           user_id: editingUser.id,
-          role
+          role: role as 'admin' | 'moderator' | 'user' | 'vendor'
         }));
-        await supabase.from("user_roles").insert(roleInserts);
+        if (roleInserts.length > 0) {
+          await supabase.from("user_roles").insert(roleInserts as any);
+        }
       }
 
       toast.success(t.userUpdated);
@@ -372,10 +387,11 @@ const UserManagement = () => {
   };
 
   const getRoleBadge = (role: AppRole) => {
-    const roleConfig = {
+    const roleConfig: Record<AppRole, { label: string; icon: typeof ShieldAlert; className: string }> = {
       admin: { label: t.roleAdmin, icon: ShieldAlert, className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
       moderator: { label: t.roleModerator, icon: ShieldCheck, className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
       vendor: { label: t.roleVendor, icon: Shield, className: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" },
+      delivery: { label: t.roleDelivery, icon: Shield, className: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
       user: { label: t.roleUser, icon: User, className: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400" }
     };
 
@@ -400,7 +416,8 @@ const UserManagement = () => {
     total: users.length,
     admins: users.filter(u => u.roles.includes('admin')).length,
     moderators: users.filter(u => u.roles.includes('moderator')).length,
-    vendors: users.filter(u => u.roles.includes('vendor')).length
+    vendors: users.filter(u => u.roles.includes('vendor')).length,
+    deliverers: users.filter(u => u.roles.includes('delivery')).length
   };
 
   return (
@@ -488,7 +505,7 @@ const UserManagement = () => {
               <div>
                 <Label className="mb-3 block">{t.roles}</Label>
                 <div className="grid grid-cols-2 gap-3">
-                  {(['admin', 'moderator', 'vendor', 'user'] as AppRole[]).map(role => (
+                  {(['admin', 'moderator', 'vendor', 'delivery', 'user'] as AppRole[]).map(role => (
                     <label 
                       key={role} 
                       className="flex items-center gap-2 p-3 rounded-lg border border-border hover:bg-muted cursor-pointer transition-colors"
@@ -517,7 +534,7 @@ const UserManagement = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
@@ -566,6 +583,19 @@ const UserManagement = () => {
               <div>
                 <p className="text-xs text-muted-foreground">{t.vendors}</p>
                 <p className="text-xl font-bold">{stats.vendors}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <Truck className="h-4 w-4 text-orange-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t.deliverers}</p>
+                <p className="text-xl font-bold">{stats.deliverers}</p>
               </div>
             </div>
           </CardContent>
