@@ -392,7 +392,10 @@ const Checkout = () => {
               {/* Order summary */}
               <div className="text-center pb-4 border-b border-border">
                 <p className="text-sm text-muted-foreground mb-1">Commande #{orderNumber}</p>
-                <p className="text-3xl font-bold text-primary">{formatPrice(total)}</p>
+                <p className="text-3xl font-bold text-primary">{formatPrice(finalTotal)}</p>
+                {discountAmount > 0 && (
+                  <p className="text-sm text-green-600 mt-1">Réduction appliquée: -{formatPrice(discountAmount)}</p>
+                )}
               </div>
 
               {/* Payment info */}
@@ -427,7 +430,7 @@ const Checkout = () => {
                     Traitement...
                   </>
                 ) : (
-                  `Payer ${formatPrice(total)}`
+                  `Payer ${formatPrice(finalTotal)}`
                 )}
               </Button>
 
