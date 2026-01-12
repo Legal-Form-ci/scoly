@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
+import HeroAdvertisements from "./HeroAdvertisements";
 
 const HeroSection = () => {
   const { t } = useLanguage();
@@ -160,48 +161,9 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* RIGHT: "À la une" placeholder (admin-managed module will be added next) */}
+            {/* RIGHT: Dynamic Advertisements */}
             <div className="animate-slide-up animation-delay-200">
-              <div className="rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 backdrop-blur-sm overflow-hidden">
-                <div className="p-6 sm:p-8">
-                  <div className="flex items-center justify-between gap-4 mb-4">
-                    <div>
-                      <h2 className="text-xl sm:text-2xl font-display font-bold text-primary-foreground">
-                        À la une
-                      </h2>
-                      <p className="text-primary-foreground/80 text-sm mt-1">
-                        Promotions, partenaires, offres exclusives et nouveautés
-                      </p>
-                    </div>
-                    <span className="inline-flex items-center rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1 text-xs text-primary-foreground/80">
-                      Publicité
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-primary-foreground/15 bg-background/10 p-4">
-                      <p className="text-primary-foreground font-semibold">Pack rentrée</p>
-                      <p className="text-primary-foreground/80 text-sm mt-1">
-                        Des offres conçues pour les élèves et étudiants.
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-primary-foreground/15 bg-background/10 p-4">
-                      <p className="text-primary-foreground font-semibold">Partenaires</p>
-                      <p className="text-primary-foreground/80 text-sm mt-1">
-                        Mettez votre marque en avant sur Izy-Scoly.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <Link to="/contact">
-                      <Button variant="heroOutline" className="w-full">
-                        Devenir partenaire
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <HeroAdvertisements />
             </div>
           </div>
         </div>

@@ -38,6 +38,7 @@ import ProductForm from "@/components/admin/ProductForm";
 import AuthorsManagement from "@/components/admin/AuthorsManagement";
 import PublicationsReview from "@/components/admin/PublicationsReview";
 import CouponManagement from "@/components/admin/CouponManagement";
+import AdvertisementsManagement from "@/components/admin/AdvertisementsManagement";
 
 type TabType =
   | "dashboard"
@@ -49,7 +50,8 @@ type TabType =
   | "authors"
   | "review"
   | "promotions"
-  | "notifications";
+  | "notifications"
+  | "advertisements";
 
 const Admin = () => {
   const { t, language } = useLanguage();
@@ -105,6 +107,7 @@ const Admin = () => {
     { id: "review", label: mt.review, icon: Eye },
     { id: "articles", label: mt.articles, icon: Package },
     { id: "promotions", label: mt.promotions, icon: Tag },
+    { id: "advertisements", label: "Publicités", icon: Bell },
   ];
 
   if (loading) {
@@ -179,6 +182,7 @@ const Admin = () => {
           {activeTab === "review" && <PublicationsReview />}
           {activeTab === "articles" && <ArticlesTab />}
           {activeTab === "promotions" && <CouponManagement />}
+          {activeTab === "advertisements" && <AdvertisementsManagement />}
         </div>
       </div>
     </main>
