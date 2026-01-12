@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
+import MultiImageUpload from "@/components/MultiImageUpload";
 
 interface ProductFormProps {
   product?: any;
@@ -88,6 +89,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
 
     // Media
     image_url: "",
+    images: [] as string[],
 
     // Flags
     is_active: true,
@@ -715,19 +717,20 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
         </div>
       </div>
 
-      {/* Image */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>{t.imageUrl}</Label>
-          <Input value={formData.image_url} onChange={(e) => setFormData((p) => ({ ...p, image_url: e.target.value }))} placeholder="https://..." />
-        </div>
-        <div>
-          <Label>{t.uploadImage}</Label>
-          <div className="flex items-center gap-3">
-            <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <Upload className="h-4 w-4 text-muted-foreground" />}
-          </div>
-        </div>
+      {/* Images */}
+      <div>
+        <Label>Images du produit</Label>
+        <MultiImageUpload
+          images={formData.images}
+          onChange={(images) => {
+            setFormData((p) => ({ 
+              ...p, 
+              images,
+              image_url: images[0] || p.image_url 
+            }));
+          }}
+          maxImages={10}
+        />
       </div>
 
       {/* Flags */}
