@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Package, Truck, CheckCircle, Clock, MapPin, Phone, User } from "lucide-react";
+import { Package, Truck, CheckCircle, Clock, MapPin, Phone, User, RefreshCw, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,13 +23,22 @@ interface Order {
   customer_confirmed_at: string | null;
 }
 
+interface DeliveryStats {
+  total_assigned: number;
+  pending_pickup: number;
+  in_transit: number;
+  delivered: number;
+}
+
 const DeliveryDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [stats, setStats] = useState<DeliveryStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -46,13 +56,32 @@ const DeliveryDashboard = () => {
       .select("role")
       .eq("user_id", user.id);
 
-    const isDelivery = roles?.some((r) => r.role === "admin" || r.role === "moderator" || r.role === "vendor");
+    // Check if user has delivery, admin, or moderator role
+    const isDelivery = roles?.some((r) => 
+      r.role === "delivery" || r.role === "admin" || r.role === "moderator"
+    );
     setHasAccess(!!isDelivery);
 
     if (isDelivery) {
-      fetchOrders();
-    } else {
-      setLoading(false);
+      await Promise.all([fetchOrders(), fetchStats()]);
+    }
+    setLoading(false);
+  };
+
+  const fetchStats = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase.rpc('get_delivery_stats', {
+        _delivery_user_id: user.id
+      });
+
+      if (error) throw error;
+      if (data && data[0]) {
+        setStats(data[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
     }
   };
 
@@ -60,24 +89,30 @@ const DeliveryDashboard = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("delivery_user_id", user.id)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc('get_delivery_orders', {
+        _delivery_user_id: user.id
+      });
 
       if (error) throw error;
       setOrders(data || []);
     } catch (error) {
       console.error("Error fetching orders:", error);
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchOrders(), fetchStats()]);
+    setRefreshing(false);
+    toast({
+      title: "Actualisé",
+      description: "Les données ont été mises à jour",
+    });
   };
 
   const updateDeliveryStatus = async (orderId: string, action: "received" | "delivered") => {
     try {
-      const updates: any = {};
+      const updates: Record<string, string> = {};
       
       if (action === "received") {
         updates.delivery_received_at = new Date().toISOString();
@@ -99,14 +134,8 @@ const DeliveryDashboard = () => {
         description: action === "received" ? "Commande marquée comme réceptionnée" : "Commande marquée comme livrée",
       });
 
-      // Send email notification
-      if (action === "delivered") {
-        await supabase.functions.invoke("send-order-email", {
-          body: { orderId, emailType: "delivered" },
-        });
-      }
-
-      fetchOrders();
+      // Refresh data
+      await Promise.all([fetchOrders(), fetchStats()]);
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -131,33 +160,40 @@ const DeliveryDashboard = () => {
     });
   };
 
-  const getStatusBadge = (order: Order) => {
-    if (order.customer_confirmed_at) {
-      return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Confirmée par client</span>;
-    }
-    if (order.delivery_delivered_at) {
-      return <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">Livrée</span>;
-    }
-    if (order.delivery_received_at) {
-      return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">En livraison</span>;
-    }
-    return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">À réceptionner</span>;
-  };
-
   const pendingOrders = orders.filter((o) => !o.delivery_received_at);
   const inProgressOrders = orders.filter((o) => o.delivery_received_at && !o.delivery_delivered_at);
   const deliveredOrders = orders.filter((o) => o.delivery_delivered_at);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-12 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
 
   if (!hasAccess) {
     return (
       <main className="min-h-screen bg-background">
         <Navbar />
         <div className="pt-24 pb-12 container mx-auto px-4 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Accès refusé</h1>
-          <p className="text-muted-foreground">Vous n'avez pas les droits d'accès à cet espace.</p>
-          <Button variant="hero" onClick={() => navigate("/")} className="mt-6">
-            Retour à l'accueil
-          </Button>
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+              <Truck size={40} className="text-muted-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-4">Accès Livreur Requis</h1>
+            <p className="text-muted-foreground mb-6">
+              Vous n'avez pas les droits d'accès à l'espace livreur. 
+              Contactez un administrateur pour obtenir les accès nécessaires.
+            </p>
+            <Button variant="hero" onClick={() => navigate("/")} className="mt-6">
+              Retour à l'accueil
+            </Button>
+          </div>
         </div>
         <Footer />
       </main>
@@ -170,48 +206,69 @@ const DeliveryDashboard = () => {
 
       <div className="pt-24 pb-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-display font-bold text-foreground mb-2">
-            Espace Livreur
-          </h1>
-          <p className="text-muted-foreground mb-8">Gérez vos livraisons assignées</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
+                🚚 Espace Livreur
+              </h1>
+              <p className="text-muted-foreground mt-1">Gérez vos livraisons assignées</p>
+            </div>
+            <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
+              <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
+              Actualiser
+            </Button>
+          </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-yellow-100 rounded-lg">
-                    <Clock className="h-6 w-6 text-yellow-600" />
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{pendingOrders.length}</p>
-                    <p className="text-sm text-muted-foreground">À réceptionner</p>
+                    <p className="text-xl sm:text-2xl font-bold">{stats?.total_assigned || 0}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Truck className="h-6 w-6 text-blue-600" />
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{inProgressOrders.length}</p>
-                    <p className="text-sm text-muted-foreground">En livraison</p>
+                    <p className="text-xl sm:text-2xl font-bold">{stats?.pending_pickup || pendingOrders.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">À récupérer</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{deliveredOrders.length}</p>
-                    <p className="text-sm text-muted-foreground">Livrées</p>
+                    <p className="text-xl sm:text-2xl font-bold">{stats?.in_transit || inProgressOrders.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">En cours</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xl sm:text-2xl font-bold">{stats?.delivered || deliveredOrders.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Livrées</p>
                   </div>
                 </div>
               </CardContent>
@@ -220,18 +277,24 @@ const DeliveryDashboard = () => {
 
           {/* Orders Tabs */}
           <Tabs defaultValue="pending" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="pending" className="gap-2">
+            <TabsList className="flex-wrap h-auto p-1">
+              <TabsTrigger value="pending" className="gap-2 text-xs sm:text-sm">
                 <Clock size={16} />
-                À réceptionner ({pendingOrders.length})
+                <span className="hidden sm:inline">À récupérer</span>
+                <span className="sm:hidden">Récup.</span>
+                ({pendingOrders.length})
               </TabsTrigger>
-              <TabsTrigger value="in_progress" className="gap-2">
+              <TabsTrigger value="in_progress" className="gap-2 text-xs sm:text-sm">
                 <Truck size={16} />
-                En livraison ({inProgressOrders.length})
+                <span className="hidden sm:inline">En livraison</span>
+                <span className="sm:hidden">Livr.</span>
+                ({inProgressOrders.length})
               </TabsTrigger>
-              <TabsTrigger value="delivered" className="gap-2">
+              <TabsTrigger value="delivered" className="gap-2 text-xs sm:text-sm">
                 <CheckCircle size={16} />
-                Livrées ({deliveredOrders.length})
+                <span className="hidden sm:inline">Livrées</span>
+                <span className="sm:hidden">OK</span>
+                ({deliveredOrders.length})
               </TabsTrigger>
             </TabsList>
 
@@ -244,12 +307,14 @@ const DeliveryDashboard = () => {
                     onReceive={() => updateDeliveryStatus(order.id, "received")}
                     formatPrice={formatPrice}
                     formatDate={formatDate}
-                    getStatusBadge={getStatusBadge}
                     showReceiveButton
                   />
                 ))}
                 {pendingOrders.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">Aucune commande à réceptionner</p>
+                  <div className="text-center py-12 bg-card rounded-xl border border-border">
+                    <Package size={48} className="mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Aucune commande à récupérer</p>
+                  </div>
                 )}
               </div>
             </TabsContent>
@@ -263,12 +328,14 @@ const DeliveryDashboard = () => {
                     onDeliver={() => updateDeliveryStatus(order.id, "delivered")}
                     formatPrice={formatPrice}
                     formatDate={formatDate}
-                    getStatusBadge={getStatusBadge}
                     showDeliverButton
                   />
                 ))}
                 {inProgressOrders.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">Aucune commande en livraison</p>
+                  <div className="text-center py-12 bg-card rounded-xl border border-border">
+                    <Truck size={48} className="mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Aucune commande en livraison</p>
+                  </div>
                 )}
               </div>
             </TabsContent>
@@ -281,11 +348,13 @@ const DeliveryDashboard = () => {
                     order={order}
                     formatPrice={formatPrice}
                     formatDate={formatDate}
-                    getStatusBadge={getStatusBadge}
                   />
                 ))}
                 {deliveredOrders.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">Aucune commande livrée</p>
+                  <div className="text-center py-12 bg-card rounded-xl border border-border">
+                    <CheckCircle size={48} className="mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Aucune commande livrée</p>
+                  </div>
                 )}
               </div>
             </TabsContent>
@@ -304,7 +373,6 @@ interface OrderCardProps {
   onDeliver?: () => void;
   formatPrice: (price: number) => string;
   formatDate: (date: string) => string;
-  getStatusBadge: (order: Order) => JSX.Element;
   showReceiveButton?: boolean;
   showDeliverButton?: boolean;
 }
@@ -315,50 +383,74 @@ const OrderCard = ({
   onDeliver,
   formatPrice,
   formatDate,
-  getStatusBadge,
   showReceiveButton,
   showDeliverButton,
 }: OrderCardProps) => {
+  const getStatusBadge = () => {
+    if (order.customer_confirmed_at) {
+      return <Badge className="bg-green-500 text-white">Confirmée</Badge>;
+    }
+    if (order.delivery_delivered_at) {
+      return <Badge className="bg-purple-500 text-white">Livrée</Badge>;
+    }
+    if (order.delivery_received_at) {
+      return <Badge className="bg-blue-500 text-white">En cours</Badge>;
+    }
+    return <Badge className="bg-yellow-500 text-white">À récupérer</Badge>;
+  };
+
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-2">
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex flex-col gap-4">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <Package className="h-5 w-5 text-primary" />
-              <span className="font-semibold">#{order.id.slice(0, 8).toUpperCase()}</span>
-              {getStatusBadge(order)}
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Package className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">
+                  #{order.id.slice(0, 8).toUpperCase()}
+                </p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Calendar size={12} />
+                  {formatDate(order.created_at)}
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
-            <p className="text-lg font-bold text-primary">{formatPrice(order.total_amount)}</p>
+            <div className="flex items-center gap-2">
+              {getStatusBadge()}
+              <span className="text-lg font-bold text-primary">
+                {formatPrice(order.total_amount)}
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <User size={16} />
-              <span>Client</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone size={16} />
-              <a href={`tel:${order.phone}`} className="hover:text-primary">
-                {order.phone}
+          {/* Customer Info */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 text-sm">
+              <Phone size={16} className="text-muted-foreground" />
+              <a href={`tel:${order.phone}`} className="text-primary hover:underline font-medium">
+                {order.phone || "Non renseigné"}
               </a>
             </div>
-            <div className="flex items-start gap-2 text-muted-foreground">
-              <MapPin size={16} className="mt-0.5 flex-shrink-0" />
-              <span className="line-clamp-2">{order.shipping_address}</span>
+            <div className="flex items-start gap-2 text-sm">
+              <MapPin size={16} className="text-muted-foreground flex-shrink-0 mt-0.5" />
+              <span className="text-foreground">{order.shipping_address || "Adresse non renseignée"}</span>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-2">
             {showReceiveButton && (
-              <Button variant="hero" onClick={onReceive}>
+              <Button variant="hero" onClick={onReceive} className="flex-1">
                 <Package size={18} />
                 Marquer réceptionnée
               </Button>
             )}
             {showDeliverButton && (
-              <Button variant="hero" onClick={onDeliver}>
+              <Button variant="hero" onClick={onDeliver} className="flex-1">
                 <CheckCircle size={18} />
                 Marquer livrée
               </Button>

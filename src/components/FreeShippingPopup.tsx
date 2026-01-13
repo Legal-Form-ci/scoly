@@ -1,37 +1,36 @@
-import { useState, useEffect } from "react";
-import { X, Truck, Gift, Smartphone } from "lucide-react";
+import { useState, useEffect, forwardRef } from "react";
+import { X, Truck, Gift, Smartphone, MapPin, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 const FREE_SHIPPING_THRESHOLD = 15500;
+const POPUP_SESSION_KEY = "freeShippingPopupSession";
 
-export const FreeShippingPopup = () => {
+export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
   const [isVisible, setIsVisible] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
-    // Check if user has dismissed this popup recently (24h)
-    const dismissed = localStorage.getItem("freeShippingPopupDismissed");
-    if (dismissed) {
-      const dismissedTime = parseInt(dismissed, 10);
-      const now = Date.now();
-      const hoursSinceDismissed = (now - dismissedTime) / (1000 * 60 * 60);
-      if (hoursSinceDismissed < 24) {
-        return;
-      }
-    }
+    // Only show on homepage
+    if (location.pathname !== "/") return;
+    
+    // Check if popup was already shown in this session
+    const sessionShown = sessionStorage.getItem(POPUP_SESSION_KEY);
+    if (sessionShown) return;
 
-    // Show popup after 3 seconds
+    // Show popup after 2 seconds
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 3000);
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [location.pathname]);
 
   const handleClose = () => {
     setIsVisible(false);
-    localStorage.setItem("freeShippingPopupDismissed", Date.now().toString());
+    // Mark as shown for this session only
+    sessionStorage.setItem(POPUP_SESSION_KEY, "true");
   };
 
   return (
@@ -43,101 +42,118 @@ export const FreeShippingPopup = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
             onClick={handleClose}
           />
 
-          {/* Popup */}
+          {/* Popup - Centered on screen */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            ref={ref}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 mx-auto max-w-lg"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-[calc(100%-2rem)] max-w-md sm:max-w-lg"
           >
-            <div className="relative bg-card rounded-2xl shadow-2xl border-2 border-primary/20 overflow-hidden">
-              {/* Decorative top bar */}
-              <div className="h-2 bg-primary" />
+            <div className="relative bg-card rounded-2xl shadow-2xl overflow-hidden border-2 border-primary/30">
+              {/* Top Banner with gradient */}
+              <div className="bg-gradient-to-r from-primary via-primary/90 to-accent p-4 sm:p-6 text-center relative overflow-hidden">
+                {/* Decorative circles */}
+                <div className="absolute -left-10 -top-10 w-32 h-32 bg-white/10 rounded-full" />
+                <div className="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full" />
+                
+                {/* Close button */}
+                <button
+                  onClick={handleClose}
+                  className="absolute top-3 right-3 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors z-10"
+                  aria-label="Fermer"
+                >
+                  <X size={18} className="text-white" />
+                </button>
 
-              {/* Close button */}
-              <button
-                onClick={handleClose}
-                className="absolute top-4 right-4 p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors z-10"
-                aria-label="Fermer"
-              >
-                <X size={20} className="text-muted-foreground" />
-              </button>
-
-              {/* Content */}
-              <div className="p-6 sm:p-8">
-                {/* Icon */}
-                <div className="flex justify-center mb-6">
-                  <div className="relative">
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Truck size={40} className="text-primary" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-8 h-8 bg-accent rounded-full flex items-center justify-center animate-bounce">
-                      <Gift size={16} className="text-accent-foreground" />
+                {/* Icon and Title */}
+                <div className="relative z-10">
+                  <div className="flex justify-center mb-3">
+                    <div className="relative">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <Truck size={32} className="text-white sm:w-10 sm:h-10" />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 bg-accent rounded-full flex items-center justify-center animate-bounce border-2 border-white">
+                        <Gift size={14} className="text-accent-foreground" />
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Title */}
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-2">
-                    🚨 Livraison gratuite !
+                  <h2 className="text-xl sm:text-2xl font-display font-bold text-white mb-1">
+                    🎉 Livraison GRATUITE !
                   </h2>
-                  <p className="text-lg text-primary font-semibold">
+                  <p className="text-white/90 text-sm sm:text-base">
                     Partout en Côte d'Ivoire
                   </p>
                 </div>
+              </div>
 
-                {/* Details */}
-                <div className="bg-muted/50 rounded-xl p-4 mb-6 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary font-bold text-sm">1</span>
+              {/* Content */}
+              <div className="p-4 sm:p-6">
+                {/* Conditions */}
+                <div className="space-y-3 mb-5">
+                  <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <CreditCard size={20} className="text-primary" />
                     </div>
-                    <p className="text-foreground">
-                      À partir de <span className="font-bold text-primary">{FREE_SHIPPING_THRESHOLD.toLocaleString("fr-FR")} FCFA</span> d'achat
-                    </p>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary font-bold text-sm">2</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-foreground">
-                      <Smartphone size={18} className="text-accent" />
-                      <span>Paiement par Mobile Money (Orange Money, MTN Money, Wave)</span>
+                    <div>
+                      <p className="font-semibold text-foreground text-sm sm:text-base">
+                        À partir de {FREE_SHIPPING_THRESHOLD.toLocaleString("fr-FR")} FCFA
+                      </p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Montant minimum d'achat</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary font-bold text-sm">3</span>
+                  <div className="flex items-center gap-3 p-3 bg-accent/5 rounded-xl border border-accent/10">
+                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                      <Smartphone size={20} className="text-accent" />
                     </div>
-                    <p className="text-foreground">
-                      Livraison en point relais (agence Izy-scoly)
-                    </p>
+                    <div>
+                      <p className="font-semibold text-foreground text-sm sm:text-base">
+                        Mobile Money accepté
+                      </p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Orange, MTN, Wave, Moov</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-900">
+                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
+                      <MapPin size={20} className="text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground text-sm sm:text-base">
+                        Livraison en point relais
+                      </p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Ou à domicile selon disponibilité</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* CTA */}
+                {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link to="/shop" className="flex-1" onClick={handleClose}>
-                    <Button variant="hero" className="w-full h-12 text-base">
-                      Profitez maintenant
+                    <Button variant="hero" className="w-full h-11 sm:h-12 text-sm sm:text-base font-semibold">
+                      🛒 Profitez maintenant
                     </Button>
                   </Link>
                   <Button
                     variant="outline"
-                    className="h-12"
+                    className="h-11 sm:h-12 text-sm sm:text-base"
                     onClick={handleClose}
                   >
                     Plus tard
                   </Button>
                 </div>
+
+                {/* Terms */}
+                <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-4">
+                  * Offre valable pour les commandes livrées en point relais Izy-Scoly. 
+                  Conditions applicables selon zone de livraison.
+                </p>
               </div>
             </div>
           </motion.div>
@@ -145,6 +161,8 @@ export const FreeShippingPopup = () => {
       )}
     </AnimatePresence>
   );
-};
+});
+
+FreeShippingPopup.displayName = "FreeShippingPopup";
 
 export default FreeShippingPopup;
