@@ -39,6 +39,10 @@ import AuthorsManagement from "@/components/admin/AuthorsManagement";
 import PublicationsReview from "@/components/admin/PublicationsReview";
 import CouponManagement from "@/components/admin/CouponManagement";
 import AdvertisementsManagement from "@/components/admin/AdvertisementsManagement";
+import DatabaseManagement from "@/components/admin/DatabaseManagement";
+import FAQManagement from "@/components/admin/FAQManagement";
+import PlatformSettings from "@/components/admin/PlatformSettings";
+import AdvancedStats from "@/components/admin/AdvancedStats";
 
 type TabType =
   | "dashboard"
@@ -51,7 +55,11 @@ type TabType =
   | "review"
   | "promotions"
   | "notifications"
-  | "advertisements";
+  | "advertisements"
+  | "faq"
+  | "stats"
+  | "settings"
+  | "database";
 
 const Admin = () => {
   const { t, language } = useLanguage();
@@ -99,6 +107,7 @@ const Admin = () => {
 
   const menuItems = [
     { id: "dashboard", label: mt.dashboard, icon: LayoutDashboard },
+    { id: "stats", label: "Statistiques", icon: LayoutDashboard },
     { id: "products", label: mt.products, icon: Package },
     { id: "categories", label: mt.categories, icon: FolderTree },
     { id: "orders", label: mt.orders, icon: ShoppingBag },
@@ -108,6 +117,9 @@ const Admin = () => {
     { id: "articles", label: mt.articles, icon: Package },
     { id: "promotions", label: mt.promotions, icon: Tag },
     { id: "advertisements", label: "Publicités", icon: Bell },
+    { id: "faq", label: "FAQ", icon: Tag },
+    { id: "database", label: "Base de données", icon: Settings },
+    { id: "settings", label: "Paramètres", icon: Settings },
   ];
 
   if (loading) {
@@ -174,6 +186,7 @@ const Admin = () => {
         {/* Main Content */}
         <div className="flex-1 p-6 lg:p-8 pb-24 lg:pb-8">
           {activeTab === "dashboard" && <AdminDashboard />}
+          {activeTab === "stats" && <AdvancedStats />}
           {activeTab === "products" && <ProductsTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "orders" && <OrdersTab />}
@@ -183,6 +196,9 @@ const Admin = () => {
           {activeTab === "articles" && <ArticlesTab />}
           {activeTab === "promotions" && <CouponManagement />}
           {activeTab === "advertisements" && <AdvertisementsManagement />}
+          {activeTab === "faq" && <FAQManagement />}
+          {activeTab === "database" && <DatabaseManagement />}
+          {activeTab === "settings" && <PlatformSettings />}
         </div>
       </div>
     </main>
