@@ -37,27 +37,44 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
     <AnimatePresence>
       {isVisible && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - Fullscreen overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999]"
             onClick={handleClose}
+            style={{ 
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh'
+            }}
           />
 
-          {/* Popup - Centered on screen */}
+          {/* Popup - Centered on screen with flexbox */}
           <motion.div
             ref={ref}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-[calc(100%-2rem)] max-w-md sm:max-w-lg"
+            className="fixed z-[10000] w-[92vw] max-w-[420px] sm:max-w-[480px]"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
           >
             <div className="relative bg-card rounded-2xl shadow-2xl overflow-hidden border-2 border-primary/30">
               {/* Top Banner with gradient */}
-              <div className="bg-gradient-to-r from-primary via-primary/90 to-accent p-4 sm:p-6 text-center relative overflow-hidden">
+              <div className="bg-gradient-to-r from-primary via-primary/90 to-accent p-4 sm:p-5 text-center relative overflow-hidden">
                 {/* Decorative circles */}
                 <div className="absolute -left-10 -top-10 w-32 h-32 bg-white/10 rounded-full" />
                 <div className="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full" />
@@ -65,7 +82,7 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
                 {/* Close button */}
                 <button
                   onClick={handleClose}
-                  className="absolute top-3 right-3 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors z-10"
+                  className="absolute top-2 right-2 sm:top-3 sm:right-3 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors z-10"
                   aria-label="Fermer"
                 >
                   <X size={18} className="text-white" />
@@ -73,76 +90,76 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
 
                 {/* Icon and Title */}
                 <div className="relative z-10">
-                  <div className="flex justify-center mb-3">
+                  <div className="flex justify-center mb-2 sm:mb-3">
                     <div className="relative">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                        <Truck size={32} className="text-white sm:w-10 sm:h-10" />
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <Truck size={28} className="text-white sm:w-8 sm:h-8" />
                       </div>
-                      <div className="absolute -top-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 bg-accent rounded-full flex items-center justify-center animate-bounce border-2 border-white">
-                        <Gift size={14} className="text-accent-foreground" />
+                      <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-accent rounded-full flex items-center justify-center animate-bounce border-2 border-white">
+                        <Gift size={12} className="text-accent-foreground" />
                       </div>
                     </div>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-display font-bold text-white mb-1">
+                  <h2 className="text-lg sm:text-xl font-display font-bold text-white mb-0.5">
                     🎉 Livraison GRATUITE !
                   </h2>
-                  <p className="text-white/90 text-sm sm:text-base">
+                  <p className="text-white/90 text-xs sm:text-sm">
                     Partout en Côte d'Ivoire
                   </p>
                 </div>
               </div>
 
               {/* Content */}
-              <div className="p-4 sm:p-6">
+              <div className="p-3 sm:p-5">
                 {/* Conditions */}
-                <div className="space-y-3 mb-5">
-                  <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <CreditCard size={20} className="text-primary" />
+                <div className="space-y-2 sm:space-y-3 mb-4">
+                  <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-primary/5 rounded-xl border border-primary/10">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <CreditCard size={16} className="text-primary sm:w-5 sm:h-5" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground text-sm sm:text-base">
+                      <p className="font-semibold text-foreground text-xs sm:text-sm">
                         À partir de {FREE_SHIPPING_THRESHOLD.toLocaleString("fr-FR")} FCFA
                       </p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Montant minimum d'achat</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Montant minimum d'achat</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-accent/5 rounded-xl border border-accent/10">
-                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                      <Smartphone size={20} className="text-accent" />
+                  <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-accent/5 rounded-xl border border-accent/10">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                      <Smartphone size={16} className="text-accent sm:w-5 sm:h-5" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground text-sm sm:text-base">
+                      <p className="font-semibold text-foreground text-xs sm:text-sm">
                         Mobile Money accepté
                       </p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Orange, MTN, Wave, Moov</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Orange, MTN, Wave, Moov</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-900">
-                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
-                      <MapPin size={20} className="text-green-600" />
+                  <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-900">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
+                      <MapPin size={16} className="text-green-600 sm:w-5 sm:h-5" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground text-sm sm:text-base">
+                      <p className="font-semibold text-foreground text-xs sm:text-sm">
                         Livraison en point relais
                       </p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Ou à domicile selon disponibilité</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Ou à domicile selon disponibilité</p>
                     </div>
                   </div>
                 </div>
 
                 {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Link to="/shop" className="flex-1" onClick={handleClose}>
-                    <Button variant="hero" className="w-full h-11 sm:h-12 text-sm sm:text-base font-semibold">
+                    <Button variant="hero" className="w-full h-10 sm:h-11 text-xs sm:text-sm font-semibold">
                       🛒 Profitez maintenant
                     </Button>
                   </Link>
                   <Button
                     variant="outline"
-                    className="h-11 sm:h-12 text-sm sm:text-base"
+                    className="h-10 sm:h-11 text-xs sm:text-sm"
                     onClick={handleClose}
                   >
                     Plus tard
@@ -150,7 +167,7 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
                 </div>
 
                 {/* Terms */}
-                <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-4">
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground text-center mt-3">
                   * Offre valable pour les commandes livrées en point relais Izy-Scoly. 
                   Conditions applicables selon zone de livraison.
                 </p>
