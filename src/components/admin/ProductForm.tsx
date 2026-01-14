@@ -309,6 +309,14 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
   useEffect(() => {
     if (!product) return;
 
+    // Build images array from product data
+    let existingImages: string[] = [];
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      existingImages = product.images;
+    } else if (product.image_url) {
+      existingImages = [product.image_url];
+    }
+
     setFormData((prev) => ({
       ...prev,
       name_fr: product.name_fr || "",
@@ -325,6 +333,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       stock: product.stock?.toString() || "0",
       category_id: product.category_id || "",
       image_url: product.image_url || "",
+      images: existingImages,
       is_active: product.is_active ?? true,
       is_featured: product.is_featured ?? false,
 
@@ -448,6 +457,11 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
 
     setLoading(true);
 
+    // Prepare images array - use formData.images if available, otherwise create from image_url
+    const imagesArray = formData.images.length > 0 
+      ? formData.images 
+      : (formData.image_url ? [formData.image_url] : []);
+
     const productData = {
       name_fr: formData.name_fr.trim(),
       name_en: formData.name_en?.trim() || formData.name_fr.trim(),
@@ -464,7 +478,8 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       stock: parseInt(formData.stock) || 0,
 
       category_id: formData.category_id || null,
-      image_url: formData.image_url || null,
+      image_url: imagesArray[0] || formData.image_url || null,
+      images: imagesArray.length > 0 ? imagesArray : null,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
 
