@@ -26,6 +26,8 @@ import ArticlePayment from "./pages/ArticlePayment";
 import ScIA from "./components/ScIA";
 import NotFound from "./pages/NotFound";
 import BootstrapAdmin from "./pages/BootstrapAdmin";
+import ModeratorDashboard from "./pages/ModeratorDashboard";
+import VendorDashboard from "./pages/VendorDashboard";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
 
 const queryClient = new QueryClient();
@@ -60,6 +62,8 @@ const App = () => (
                 <Route path="/article/pay/:id" element={<ArticlePayment />} />
                 <Route path="/bootstrap-admin" element={<BootstrapAdmin />} />
                 <Route path="/delivery" element={<DeliveryDashboard />} />
+                <Route path="/moderator" element={<ModeratorDashboard />} />
+                <Route path="/vendor" element={<VendorDashboard />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <ScIA />
