@@ -4,7 +4,6 @@ import {
   Calendar, 
   Eye, 
   Heart, 
-  Share2, 
   ArrowLeft, 
   Clock, 
   User, 
@@ -26,6 +25,7 @@ import SmartImage from "@/components/SmartImage";
 import SEOHead from "@/components/SEOHead";
 import ArticleReactions from "@/components/ArticleReactions";
 import MediaLightbox from "@/components/MediaLightbox";
+import SocialShare from "@/components/SocialShare";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -295,18 +295,6 @@ const ArticleDetail = () => {
     }
   };
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({
-        title: getTitle(),
-        text: getExcerpt(),
-        url: window.location.href
-      });
-    } catch {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Lien copié !");
-    }
-  };
 
   const submitComment = async () => {
     if (!user) {
@@ -610,10 +598,11 @@ const ArticleDetail = () => {
                 {comments.length} commentaires
               </span>
             </div>
-            <Button variant="outline" size="sm" onClick={handleShare}>
-              <Share2 size={16} />
-              Partager
-            </Button>
+            <SocialShare 
+              title={getTitle()} 
+              text={getExcerpt() || undefined}
+              url={`https://izy-scoly.ci/actualites/${article.id}`}
+            />
           </div>
 
           {/* Content */}
