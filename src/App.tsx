@@ -71,8 +71,9 @@ const App = () => (
                   <Route path="/compte" element={<Account />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/actualites" element={<Actualites />} />
-                  <Route path="/actualites/:id" element={<ArticleDetail />} />
                   <Route path="/actualites/write" element={<WriteArticle />} />
+                  <Route path="/actualites/edit/:id" element={<WriteArticle />} />
+                  <Route path="/actualites/:id" element={<ArticleDetail />} />
                   <Route path="/team" element={<TeamDashboard />} />
                   <Route path="/author" element={<AuthorDashboard />} />
                   <Route path="/faq" element={<FAQ />} />

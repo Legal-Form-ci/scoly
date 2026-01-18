@@ -223,6 +223,7 @@ export type Database = {
           id: string
           is_premium: boolean | null
           likes: number | null
+          media: Json | null
           price: number | null
           published_at: string | null
           rejection_reason: string | null
@@ -250,6 +251,7 @@ export type Database = {
           id?: string
           is_premium?: boolean | null
           likes?: number | null
+          media?: Json | null
           price?: number | null
           published_at?: string | null
           rejection_reason?: string | null
@@ -277,6 +279,7 @@ export type Database = {
           id?: string
           is_premium?: boolean | null
           likes?: number | null
+          media?: Json | null
           price?: number | null
           published_at?: string | null
           rejection_reason?: string | null

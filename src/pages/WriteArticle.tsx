@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Save, Send, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,17 +10,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ImageUpload from "@/components/ImageUpload";
+import MediaUpload from "@/components/MediaUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+
+interface MediaItem {
+  url: string;
+  type: "image" | "video";
+}
 
 const WriteArticle = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { id } = useParams();
   
   const [loading, setLoading] = useState(false);
+  const [fetchingArticle, setFetchingArticle] = useState(!!id);
   const [form, setForm] = useState({
     title_fr: "",
     title_en: "",
@@ -33,7 +40,7 @@ const WriteArticle = () => {
     category: "general",
     is_premium: false,
     price: "0",
-    cover_image: "",
+    media: [] as MediaItem[],
   });
 
   const categories = [
@@ -44,6 +51,63 @@ const WriteArticle = () => {
     { value: "news", label: "Actualités" },
     { value: "guides", label: "Guides" },
   ];
+
+  // Fetch article for editing
+  useEffect(() => {
+    if (id && user) {
+      fetchArticle();
+    }
+  }, [id, user]);
+
+  const fetchArticle = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Parse media from JSON if available
+        let mediaItems: MediaItem[] = [];
+        if (data.media && Array.isArray(data.media)) {
+          mediaItems = (data.media as unknown as MediaItem[]).map((item: any) => ({
+            url: item.url || "",
+            type: item.type === "video" ? "video" : "image",
+          }));
+        } else if (data.cover_image) {
+          // Fallback: convert old cover_image to new format
+          mediaItems = [{ url: data.cover_image, type: "image" }];
+        }
+
+        setForm({
+          title_fr: data.title_fr || "",
+          title_en: data.title_en || "",
+          title_de: data.title_de || "",
+          title_es: data.title_es || "",
+          content_fr: data.content_fr || "",
+          content_en: data.content_en || "",
+          excerpt_fr: data.excerpt_fr || "",
+          excerpt_en: data.excerpt_en || "",
+          category: data.category || "general",
+          is_premium: data.is_premium || false,
+          price: String(data.price || 0),
+          media: mediaItems,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching article:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger l'article.",
+        variant: "destructive",
+      });
+    } finally {
+      setFetchingArticle(false);
+    }
+  };
 
   const handleSubmit = async (publish: boolean) => {
     if (!user) {
@@ -66,38 +130,65 @@ const WriteArticle = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('articles')
-        .insert({
-          author_id: user.id,
-          title_fr: form.title_fr,
-          title_en: form.title_en || form.title_fr,
-          title_de: form.title_de || form.title_fr,
-          title_es: form.title_es || form.title_fr,
-          content_fr: form.content_fr,
-          content_en: form.content_en || form.content_fr,
-          content_de: form.content_fr,
-          content_es: form.content_fr,
-          excerpt_fr: form.excerpt_fr,
-          excerpt_en: form.excerpt_en || form.excerpt_fr,
-          excerpt_de: form.excerpt_fr,
-          excerpt_es: form.excerpt_fr,
-          category: form.category,
-          is_premium: form.is_premium,
-          price: form.is_premium ? parseFloat(form.price) : 0,
-          cover_image: form.cover_image || null,
-          status: publish ? 'pending' : 'draft',
-          published_at: publish ? new Date().toISOString() : null,
+      // Get cover image from first media item
+      const coverImage = form.media.length > 0 ? form.media[0].url : null;
+
+      // Convert media to JSON-compatible format
+      const mediaJson = form.media.map(item => ({ url: item.url, type: item.type }));
+
+      const articleData = {
+        author_id: user.id,
+        title_fr: form.title_fr,
+        title_en: form.title_en || form.title_fr,
+        title_de: form.title_de || form.title_fr,
+        title_es: form.title_es || form.title_fr,
+        content_fr: form.content_fr,
+        content_en: form.content_en || form.content_fr,
+        content_de: form.content_fr,
+        content_es: form.content_fr,
+        excerpt_fr: form.excerpt_fr,
+        excerpt_en: form.excerpt_en || form.excerpt_fr,
+        excerpt_de: form.excerpt_fr,
+        excerpt_es: form.excerpt_fr,
+        category: form.category,
+        is_premium: form.is_premium,
+        price: form.is_premium ? parseFloat(form.price) : 0,
+        cover_image: coverImage,
+        media: mediaJson as any,
+        status: publish ? 'pending' : 'draft',
+        published_at: publish ? new Date().toISOString() : null,
+      };
+
+      if (id) {
+        // Update existing article
+        const { error } = await supabase
+          .from('articles')
+          .update(articleData)
+          .eq('id', id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Article mis à jour",
+          description: publish 
+            ? "Votre article a été soumis pour approbation."
+            : "Votre brouillon a été enregistré.",
         });
+      } else {
+        // Create new article
+        const { error } = await supabase
+          .from('articles')
+          .insert(articleData);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: publish ? "Article soumis" : "Brouillon enregistré",
-        description: publish 
-          ? "Votre article a été soumis pour approbation."
-          : "Votre brouillon a été enregistré.",
-      });
+        toast({
+          title: publish ? "Article soumis" : "Brouillon enregistré",
+          description: publish 
+            ? "Votre article a été soumis pour approbation."
+            : "Votre brouillon a été enregistré.",
+        });
+      }
       
       navigate('/actualites');
     } catch (error) {
@@ -126,6 +217,18 @@ const WriteArticle = () => {
     );
   }
 
+  if (fetchingArticle) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-24 flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
@@ -137,10 +240,28 @@ const WriteArticle = () => {
         </Button>
 
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-display font-bold text-foreground mb-2">Publier un article</h1>
+          <h1 className="text-3xl font-display font-bold text-foreground mb-2">
+            {id ? "Modifier l'article" : "Publier un article"}
+          </h1>
           <p className="text-muted-foreground mb-8">Partagez vos idées et conseils avec la communauté Izy-scoly</p>
 
           <div className="grid gap-8">
+            {/* Media Upload */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Images et vidéos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MediaUpload
+                  value={form.media}
+                  onChange={(media) => setForm({ ...form, media })}
+                  bucket="article-media"
+                  label="Médias de l'article"
+                  maxItems={10}
+                />
+              </CardContent>
+            </Card>
+
             {/* Main Content */}
             <Card>
               <CardHeader>
@@ -187,16 +308,6 @@ const WriteArticle = () => {
                     value={form.content_fr}
                     onChange={(e) => setForm({ ...form, content_fr: e.target.value })}
                     rows={15}
-                  />
-                </div>
-
-                <div>
-                  <Label>Image de couverture</Label>
-                  <ImageUpload
-                    value={form.cover_image}
-                    onChange={(url) => setForm({ ...form, cover_image: url })}
-                    bucket="article-images"
-                    placeholder="Télécharger ou coller une URL"
                   />
                 </div>
               </CardContent>

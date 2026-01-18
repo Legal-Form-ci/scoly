@@ -1094,10 +1094,21 @@ const LoyaltyTab = () => {
 
 // Articles Tab
 const ArticlesTab = () => {
+  const navigate = useNavigate();
   const [articles, setArticles] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchArticles();
+
+    const channel = supabase
+      .channel('articles-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'articles' }, fetchArticles)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchArticles = async () => {
@@ -1109,7 +1120,10 @@ const ArticlesTab = () => {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from("articles").update({ status, published_at: status === "published" ? new Date().toISOString() : null }).eq("id", id);
+    await supabase.from("articles").update({ 
+      status, 
+      published_at: status === "published" ? new Date().toISOString() : null 
+    }).eq("id", id);
     toast.success(`Article ${status === "published" ? "publié" : "mis en brouillon"}`);
     fetchArticles();
   };
@@ -1121,15 +1135,51 @@ const ArticlesTab = () => {
     fetchArticles();
   };
 
+  const filteredArticles = articles.filter((a) =>
+    a.title_fr.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "published":
+        return <Badge variant="default" className="bg-green-500">Publié</Badge>;
+      case "pending":
+        return <Badge variant="secondary" className="bg-yellow-500 text-black">En attente</Badge>;
+      case "rejected":
+        return <Badge variant="destructive">Rejeté</Badge>;
+      default:
+        return <Badge variant="outline">Brouillon</Badge>;
+    }
+  };
+
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-foreground mb-8">Modération des Actualités</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <h1 className="text-2xl font-display font-bold text-foreground">Gestion des Actualités</h1>
+        <Button onClick={() => navigate('/actualites/write')} className="bg-primary text-primary-foreground">
+          <Plus size={18} />
+          Nouvelle actualité
+        </Button>
+      </div>
+
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un article..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
 
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-muted">
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Image</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Titre</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Catégorie</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Vues</th>
@@ -1139,8 +1189,19 @@ const ArticlesTab = () => {
               </tr>
             </thead>
             <tbody>
-              {articles.map((article) => (
+              {filteredArticles.map((article) => (
                 <tr key={article.id} className="border-t border-border">
+                  <td className="py-3 px-4">
+                    <div className="w-16 h-12 bg-muted rounded-lg overflow-hidden">
+                      <img 
+                        src={article.cover_image || "/placeholder.svg"} 
+                        alt="" 
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                      />
+                    </div>
+                  </td>
                   <td className="py-3 px-4 font-medium max-w-xs truncate">{article.title_fr}</td>
                   <td className="py-3 px-4 hidden sm:table-cell">
                     <Badge variant="outline">{article.category}</Badge>
@@ -1148,12 +1209,18 @@ const ArticlesTab = () => {
                   <td className="py-3 px-4 hidden md:table-cell">{article.views || 0}</td>
                   <td className="py-3 px-4 hidden md:table-cell">{article.likes || 0}</td>
                   <td className="py-3 px-4">
-                    <Badge variant={article.status === "published" ? "default" : "secondary"}>
-                      {article.status === "published" ? "Publié" : "Brouillon"}
-                    </Badge>
+                    {getStatusBadge(article.status)}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => navigate(`/actualites/edit/${article.id}`)}
+                        title="Modifier"
+                      >
+                        <Edit size={14} />
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
