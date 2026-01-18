@@ -30,6 +30,11 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+interface MediaItem {
+  url: string;
+  type: "image" | "video";
+}
+
 interface Article {
   id: string;
   title_fr: string;
@@ -43,6 +48,7 @@ interface Article {
   excerpt_fr: string | null;
   excerpt_en: string | null;
   cover_image: string | null;
+  media?: MediaItem[];
   category: string;
   is_premium: boolean;
   price: number | null;
@@ -121,7 +127,16 @@ const ArticleDetail = () => {
         .single();
 
       if (articleError) throw articleError;
-      setArticle(articleData);
+      
+      // Parse media from JSON
+      const parsedArticle = {
+        ...articleData,
+        media: articleData.media ? (articleData.media as unknown as MediaItem[]).map((item: any) => ({
+          url: item?.url || "",
+          type: item?.type === "video" ? "video" : "image" as const,
+        })) : undefined,
+      };
+      setArticle(parsedArticle as Article);
 
       // Fetch author
       if (articleData?.author_id) {
@@ -484,15 +499,62 @@ const ArticleDetail = () => {
             </div>
           </header>
 
-          {/* Cover Image */}
-          <div className="aspect-video bg-muted rounded-xl overflow-hidden mb-8">
-            <SmartImage
-              src={article.cover_image}
-              alt={getTitle()}
-              className="w-full h-full object-cover"
-              fallbackSrc="/placeholder.svg"
-            />
-          </div>
+          {/* Cover Image / Media Gallery */}
+          {article.media && article.media.length > 1 ? (
+            <div className="mb-8 space-y-4">
+              {/* Main image/video */}
+              <div className="aspect-video bg-muted rounded-xl overflow-hidden">
+                {article.media[0].type === "video" ? (
+                  <video
+                    src={article.media[0].url}
+                    className="w-full h-full object-cover"
+                    controls
+                    playsInline
+                  />
+                ) : (
+                  <SmartImage
+                    src={article.media[0].url}
+                    alt={getTitle()}
+                    className="w-full h-full object-cover"
+                    fallbackSrc="/placeholder.svg"
+                  />
+                )}
+              </div>
+              {/* Thumbnails */}
+              {article.media.length > 1 && (
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  {article.media.slice(1).map((media, idx) => (
+                    <div key={idx} className="aspect-video bg-muted rounded-lg overflow-hidden">
+                      {media.type === "video" ? (
+                        <video
+                          src={media.url}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                        />
+                      ) : (
+                        <SmartImage
+                          src={media.url}
+                          alt={`${getTitle()} - ${idx + 2}`}
+                          className="w-full h-full object-cover"
+                          fallbackSrc="/placeholder.svg"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="aspect-video bg-muted rounded-xl overflow-hidden mb-8">
+              <SmartImage
+                src={article.cover_image}
+                alt={getTitle()}
+                className="w-full h-full object-cover"
+                fallbackSrc="/placeholder.svg"
+              />
+            </div>
+          )}
 
           {/* Reactions */}
           <div className="flex items-center justify-between mb-8 pb-6 border-b flex-wrap gap-4">
