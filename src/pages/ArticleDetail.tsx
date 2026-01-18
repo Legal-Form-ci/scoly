@@ -102,6 +102,7 @@ const ArticleDetail = () => {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [showFloatingShare, setShowFloatingShare] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -109,6 +110,23 @@ const ArticleDetail = () => {
       incrementViews();
     }
   }, [id]);
+
+  // Show/hide floating share buttons based on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show after scrolling past 400px and hide near footer
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const nearBottom = scrollY + windowHeight > documentHeight - 300;
+      
+      setShowFloatingShare(scrollY > 400 && !nearBottom);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial state
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (user && article) {
@@ -749,8 +767,14 @@ const ArticleDetail = () => {
         </div>
       </article>
 
-      {/* Floating Share Buttons */}
-      <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-2">
+      {/* Floating Share Buttons with animation */}
+      <div 
+        className={`fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-2 transition-all duration-300 ${
+          showFloatingShare 
+            ? 'opacity-100 translate-x-0' 
+            : 'opacity-0 -translate-x-full pointer-events-none'
+        }`}
+      >
         <SocialShare 
           title={getTitle()} 
           text={getExcerpt() || undefined}
