@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import SmartImage from "@/components/SmartImage";
 
 interface Advertisement {
   id: string;
@@ -119,7 +120,7 @@ const HeroAdvertisements = () => {
     <div className="rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 backdrop-blur-sm overflow-hidden">
       <div className="relative">
         {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-black/50 to-transparent">
+        <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-black/30">
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white">
               À la une
@@ -132,13 +133,14 @@ const HeroAdvertisements = () => {
           </div>
         </div>
 
-        {/* Media */}
+        {/* Media avec SmartImage */}
         <div className="relative aspect-[4/3] sm:aspect-video">
           {currentAd.media_type === "image" && currentAd.media_url ? (
-            <img
+            <SmartImage
               src={currentAd.media_url}
               alt={currentAd.title}
               className="w-full h-full object-cover"
+              fallbackSrc="/placeholder.svg"
             />
           ) : currentAd.media_type === "video" && currentAd.media_url ? (
             <video
@@ -150,15 +152,15 @@ const HeroAdvertisements = () => {
               playsInline
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary to-accent flex items-center justify-center p-6">
+            <div className="w-full h-full bg-primary flex items-center justify-center p-6">
               <p className="text-2xl font-display font-bold text-white text-center">
                 {currentAd.title}
               </p>
             </div>
           )}
 
-          {/* Overlay with content */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 sm:p-6">
+          {/* Overlay with content - Fond solide */}
+          <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-4 sm:p-6">
             <h3 className="text-lg sm:text-xl font-display font-bold text-white mb-1">
               {currentAd.title}
             </h3>

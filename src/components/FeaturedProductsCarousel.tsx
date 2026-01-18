@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
+import SmartImage from "@/components/SmartImage";
 
 interface Product {
   id: string;
@@ -128,18 +129,12 @@ const FeaturedProductsCarousel = () => {
               >
                 <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all h-full flex flex-col">
                   <Link to={`/product/${product.id}`} className="relative aspect-square block overflow-hidden">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={getLocalizedName(product)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <ShoppingCart size={32} className="text-muted-foreground" />
-                      </div>
-                    )}
+                    <SmartImage
+                      src={product.image_url}
+                      alt={getLocalizedName(product)}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fallbackSrc="/placeholder.svg"
+                    />
                     {product.discount_percent > 0 && (
                       <span className="absolute top-2 left-2 px-1.5 py-0.5 sm:px-2 sm:py-1 bg-destructive text-destructive-foreground text-[10px] sm:text-xs font-medium rounded">
                         -{product.discount_percent}%
