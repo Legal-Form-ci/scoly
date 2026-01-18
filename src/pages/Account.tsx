@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, ShoppingBag, Settings, LogOut, Package, CheckCircle, Truck, Bell, Clock } from "lucide-react";
+import { User, ShoppingBag, Settings, LogOut, Package, CheckCircle, Truck, Bell, Clock, MapPin, Heart, Gift, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -33,6 +37,14 @@ interface Order {
   customer_confirmed_at: string | null;
 }
 
+interface OrderItem {
+  id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
 interface Notification {
   id: string;
   title: string;
@@ -40,6 +52,16 @@ interface Notification {
   type: string;
   is_read: boolean;
   created_at: string;
+}
+
+interface Address {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  region: string;
+  phone: string;
+  isDefault: boolean;
 }
 
 const Account = () => {
@@ -55,9 +77,21 @@ const Account = () => {
     preferred_language: language,
   });
   const [orders, setOrders] = useState<Order[]>([]);
+  const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [newAddress, setNewAddress] = useState({
+    name: '',
+    address: '',
+    city: '',
+    region: '',
+    phone: '',
+    isDefault: false
+  });
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -67,6 +101,7 @@ const Account = () => {
     fetchProfile();
     fetchOrders();
     fetchNotifications();
+    // Simulate loyalty points based on orders
   }, [user, navigate]);
 
   const fetchProfile = async () => {
@@ -107,6 +142,23 @@ const Account = () => {
 
       if (error) throw error;
       setOrders(data || []);
+      
+      // Calculate loyalty points (1 point per 1000 FCFA spent on delivered orders)
+      const deliveredOrders = (data || []).filter(o => o.status === 'delivered');
+      const totalSpent = deliveredOrders.reduce((acc, o) => acc + o.total_amount, 0);
+      setLoyaltyPoints(Math.floor(totalSpent / 1000));
+
+      // Fetch order items for each order
+      for (const order of data || []) {
+        const { data: items } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.id);
+        
+        if (items) {
+          setOrderItems(prev => ({ ...prev, [order.id]: items }));
+        }
+      }
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
@@ -211,6 +263,19 @@ const Account = () => {
     }
   };
 
+  const handleAddAddress = () => {
+    const id = Date.now().toString();
+    setAddresses(prev => [...prev, { ...newAddress, id }]);
+    setNewAddress({ name: '', address: '', city: '', region: '', phone: '', isDefault: false });
+    setIsAddressDialogOpen(false);
+    toast({ title: "Adresse ajoutée", description: "L'adresse a été enregistrée." });
+  };
+
+  const handleRemoveAddress = (id: string) => {
+    setAddresses(prev => prev.filter(a => a.id !== id));
+    toast({ title: "Adresse supprimée" });
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate("/");
@@ -258,6 +323,11 @@ const Account = () => {
 
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
 
+  // Calculate stats
+  const totalOrders = orders.length;
+  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
+  const totalSpent = orders.filter(o => o.status === 'delivered').reduce((acc, o) => acc + o.total_amount, 0);
+
   if (!user) return null;
 
   return (
@@ -266,45 +336,112 @@ const Account = () => {
       
       <div className="pt-24 pb-12">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-display font-bold text-foreground">
-              {t.account.title}
-            </h1>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
+                {t.account.title}
+              </h1>
+              <p className="text-muted-foreground">Bienvenue, {profile.first_name || 'Client'}</p>
+            </div>
             <Button variant="outline" onClick={handleLogout}>
               <LogOut size={18} />
-              {t.nav.logout}
+              <span className="hidden sm:inline">{t.nav.logout}</span>
             </Button>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <ShoppingBag size={20} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Commandes</p>
+                    <p className="text-xl font-bold">{totalOrders}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/20">
+                    <CheckCircle size={20} className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Livrées</p>
+                    <p className="text-xl font-bold">{deliveredOrders}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Gift size={20} className="text-accent-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Points fidélité</p>
+                    <p className="text-xl font-bold">{loyaltyPoints}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-secondary/20">
+                    <Package size={20} className="text-secondary-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total dépensé</p>
+                    <p className="text-lg font-bold">{formatPrice(totalSpent)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <Tabs defaultValue="orders" className="space-y-8">
             <TabsList className="bg-card border border-border flex-wrap h-auto p-1">
               <TabsTrigger value="orders" className="flex items-center gap-2">
                 <ShoppingBag size={18} />
-                {t.account.orders}
+                <span className="hidden sm:inline">{t.account.orders}</span>
                 {orders.length > 0 && (
                   <Badge variant="secondary" className="ml-1">{orders.length}</Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="notifications" className="flex items-center gap-2 relative">
                 <Bell size={18} />
-                Notifications
+                <span className="hidden sm:inline">Notifications</span>
                 {unreadNotifications > 0 && (
                   <Badge variant="destructive" className="ml-1">{unreadNotifications}</Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="addresses" className="flex items-center gap-2">
+                <MapPin size={18} />
+                <span className="hidden sm:inline">Adresses</span>
+              </TabsTrigger>
+              <TabsTrigger value="loyalty" className="flex items-center gap-2">
+                <Gift size={18} />
+                <span className="hidden sm:inline">Fidélité</span>
+              </TabsTrigger>
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User size={18} />
-                {t.account.profile}
+                <span className="hidden sm:inline">{t.account.profile}</span>
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings size={18} />
-                {t.account.settings}
+                <span className="hidden sm:inline">{t.account.settings}</span>
               </TabsTrigger>
             </TabsList>
 
             {/* Orders Tab */}
             <TabsContent value="orders">
-              <div className="bg-card rounded-xl border border-border p-6">
+              <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
                 <h2 className="text-xl font-display font-bold text-foreground mb-6">
                   {t.account.orderHistory}
                 </h2>
@@ -346,6 +483,21 @@ const Account = () => {
                           </div>
                         </div>
 
+                        {/* Order Items */}
+                        {orderItems[order.id] && orderItems[order.id].length > 0 && (
+                          <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm font-medium mb-2">Articles commandés:</p>
+                            <div className="space-y-1">
+                              {orderItems[order.id].map((item) => (
+                                <div key={item.id} className="flex justify-between text-sm">
+                                  <span>{item.product_name} x{item.quantity}</span>
+                                  <span className="text-muted-foreground">{formatPrice(item.total_price)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Order Status Timeline */}
                         <div className="flex flex-wrap items-center gap-2 mb-4">
                           <Badge className={getStatusColor(order.status)}>
@@ -376,8 +528,9 @@ const Account = () => {
 
                         {/* Shipping Address */}
                         {order.shipping_address && (
-                          <p className="text-sm text-muted-foreground mb-4">
-                            📍 {order.shipping_address}
+                          <p className="text-sm text-muted-foreground mb-4 flex items-start gap-2">
+                            <MapPin size={16} className="flex-shrink-0 mt-0.5" />
+                            {order.shipping_address}
                           </p>
                         )}
 
@@ -416,7 +569,7 @@ const Account = () => {
 
             {/* Notifications Tab */}
             <TabsContent value="notifications">
-              <div className="bg-card rounded-xl border border-border p-6">
+              <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
                 <h2 className="text-xl font-display font-bold text-foreground mb-6">
                   Notifications
                 </h2>
@@ -439,16 +592,16 @@ const Account = () => {
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-full ${
-                            notification.type === 'order' ? 'bg-blue-100 text-blue-600' :
-                            notification.type === 'delivery' ? 'bg-green-100 text-green-600' :
-                            'bg-gray-100 text-gray-600'
+                          <div className={`p-2 rounded-full flex-shrink-0 ${
+                            notification.type === 'order' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' :
+                            notification.type === 'delivery' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :
+                            'bg-gray-100 text-gray-600 dark:bg-gray-900/30'
                           }`}>
                             {notification.type === 'order' ? <ShoppingBag size={16} /> :
                              notification.type === 'delivery' ? <Truck size={16} /> :
                              <Bell size={16} />}
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="font-medium text-foreground">{notification.title}</p>
                             <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
                             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
@@ -467,87 +620,243 @@ const Account = () => {
               </div>
             </TabsContent>
 
-            {/* Profile Tab */}
-            <TabsContent value="profile">
-              <div className="bg-card rounded-xl border border-border p-6">
-                <h2 className="text-xl font-display font-bold text-foreground mb-6">
-                  {t.account.editProfile}
-                </h2>
+            {/* Addresses Tab */}
+            <TabsContent value="addresses">
+              <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-display font-bold text-foreground">
+                    Mes adresses de livraison
+                  </h2>
+                  <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="hero" size="sm">
+                        <Plus size={16} />
+                        Ajouter
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Ajouter une adresse</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label>Nom de l'adresse</Label>
+                          <Input
+                            placeholder="Ex: Maison, Bureau..."
+                            value={newAddress.name}
+                            onChange={(e) => setNewAddress({ ...newAddress, name: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Adresse complète</Label>
+                          <Textarea
+                            placeholder="Rue, quartier, repères..."
+                            value={newAddress.address}
+                            onChange={(e) => setNewAddress({ ...newAddress, address: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Ville</Label>
+                            <Input
+                              value={newAddress.city}
+                              onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label>Région</Label>
+                            <Input
+                              value={newAddress.region}
+                              onChange={(e) => setNewAddress({ ...newAddress, region: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label>Téléphone</Label>
+                          <Input
+                            value={newAddress.phone}
+                            onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
+                          />
+                        </div>
+                        <Button onClick={handleAddAddress} className="w-full">
+                          Enregistrer l'adresse
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
 
-                {loading ? (
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-10 bg-muted rounded" />
-                    <div className="h-10 bg-muted rounded" />
-                    <div className="h-10 bg-muted rounded" />
+                {addresses.length === 0 ? (
+                  <div className="text-center py-12">
+                    <MapPin size={48} className="mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-4">Aucune adresse enregistrée</p>
+                    <p className="text-sm text-muted-foreground">
+                      Ajoutez vos adresses pour accélérer vos futures commandes
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-6 max-w-md">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="firstName">{t.auth.firstName}</Label>
-                        <Input
-                          id="firstName"
-                          value={profile.first_name || ""}
-                          onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
-                          className="mt-1"
-                        />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {addresses.map((addr) => (
+                      <div key={addr.id} className="p-4 border border-border rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold flex items-center gap-2">
+                              {addr.name}
+                              {addr.isDefault && <Badge variant="secondary">Par défaut</Badge>}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">{addr.address}</p>
+                            <p className="text-sm text-muted-foreground">{addr.city}, {addr.region}</p>
+                            <p className="text-sm text-muted-foreground">{addr.phone}</p>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveAddress(addr.id)}>
+                            <Trash2 size={16} className="text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="lastName">{t.auth.lastName}</Label>
-                        <Input
-                          id="lastName"
-                          value={profile.last_name || ""}
-                          onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">{t.auth.email}</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={user.email || ""}
-                        disabled
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone">{t.auth.phone}</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={profile.phone || ""}
-                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <Button variant="hero" onClick={handleSaveProfile} disabled={saving}>
-                      {saving ? t.common.loading : t.account.saveChanges}
-                    </Button>
+                    ))}
                   </div>
                 )}
               </div>
             </TabsContent>
 
+            {/* Loyalty Tab */}
+            <TabsContent value="loyalty">
+              <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
+                <h2 className="text-xl font-display font-bold text-foreground mb-6">
+                  Programme de fidélité
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Gift className="text-primary" />
+                        Vos points
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-4xl font-bold text-primary">{loyaltyPoints}</p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Gagnez 1 point pour chaque 1000 FCFA dépensés
+                      </p>
+                      <div className="mt-4">
+                        <div className="flex justify-between text-sm mb-2">
+                          <span>Prochain palier (100 pts)</span>
+                          <span>{loyaltyPoints}/100</span>
+                        </div>
+                        <Progress value={(loyaltyPoints / 100) * 100} className="h-2" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Récompenses disponibles</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div>
+                          <p className="font-medium">-5% sur la prochaine commande</p>
+                          <p className="text-xs text-muted-foreground">50 points requis</p>
+                        </div>
+                        <Button size="sm" variant="outline" disabled={loyaltyPoints < 50}>
+                          Échanger
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div>
+                          <p className="font-medium">Livraison express gratuite</p>
+                          <p className="text-xs text-muted-foreground">100 points requis</p>
+                        </div>
+                        <Button size="sm" variant="outline" disabled={loyaltyPoints < 100}>
+                          Échanger
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div>
+                          <p className="font-medium">-10% sur votre commande</p>
+                          <p className="text-xs text-muted-foreground">200 points requis</p>
+                        </div>
+                        <Button size="sm" variant="outline" disabled={loyaltyPoints < 200}>
+                          Échanger
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Profile Tab */}
+            <TabsContent value="profile">
+              <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
+                <h2 className="text-xl font-display font-bold text-foreground mb-6">
+                  {t.account.profile}
+                </h2>
+
+                <div className="max-w-md space-y-4">
+                  <div>
+                    <Label htmlFor="firstName">{t.auth.firstName}</Label>
+                    <Input
+                      id="firstName"
+                      value={profile.first_name || ""}
+                      onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">{t.auth.lastName}</Label>
+                    <Input
+                      id="lastName"
+                      value={profile.last_name || ""}
+                      onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Téléphone</Label>
+                    <Input
+                      id="phone"
+                      value={profile.phone || ""}
+                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      value={user.email || ""}
+                      disabled
+                      className="mt-1 bg-muted"
+                    />
+                  </div>
+
+                  <Button onClick={handleSaveProfile} disabled={saving}>
+                    {saving ? t.common.loading : t.account.saveChanges}
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
             {/* Settings Tab */}
             <TabsContent value="settings">
-              <div className="bg-card rounded-xl border border-border p-6">
+              <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
                 <h2 className="text-xl font-display font-bold text-foreground mb-6">
                   {t.account.settings}
                 </h2>
 
-                <div className="space-y-6 max-w-md">
+                <div className="max-w-md space-y-6">
                   <div>
                     <Label htmlFor="language">{t.account.language}</Label>
                     <select
                       id="language"
                       value={profile.preferred_language || language}
-                      onChange={(e) => setProfile({ ...profile, preferred_language: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-card text-foreground"
+                      onChange={(e) => {
+                        setProfile({ ...profile, preferred_language: e.target.value });
+                        setLanguage(e.target.value as 'fr' | 'en' | 'de' | 'es');
+                      }}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                     >
                       <option value="fr">Français</option>
                       <option value="en">English</option>
@@ -556,16 +865,19 @@ const Account = () => {
                     </select>
                   </div>
 
-                  <Button variant="hero" onClick={handleSaveProfile} disabled={saving}>
-                    {saving ? t.common.loading : t.account.saveChanges}
-                  </Button>
+                  <div className="pt-4 border-t border-border">
+                    <h3 className="font-semibold text-destructive mb-4">Zone dangereuse</h3>
+                    <Button variant="outline" className="text-destructive border-destructive">
+                      Supprimer mon compte
+                    </Button>
+                  </div>
                 </div>
               </div>
             </TabsContent>
           </Tabs>
         </div>
       </div>
-
+      
       <Footer />
     </main>
   );
