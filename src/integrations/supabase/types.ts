@@ -1308,6 +1308,14 @@ export type Database = {
           total_users: number
         }[]
       }
+      get_analytics_summary: {
+        Args: { _end_date?: string; _start_date?: string }
+        Returns: {
+          event_count: number
+          event_type: string
+          unique_users: number
+        }[]
+      }
       get_delivery_orders: {
         Args: { _delivery_user_id: string }
         Returns: {
@@ -1344,6 +1352,19 @@ export type Database = {
           in_transit: number
           pending_pickup: number
           total_assigned: number
+        }[]
+      }
+      get_share_stats: {
+        Args: { _end_date?: string; _start_date?: string }
+        Returns: {
+          article_id: string
+          facebook: number
+          linkedin: number
+          telegram: number
+          title_fr: string
+          total: number
+          twitter: number
+          whatsapp: number
         }[]
       }
       has_role: {
