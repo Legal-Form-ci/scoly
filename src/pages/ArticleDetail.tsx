@@ -230,6 +230,7 @@ const ArticleDetail = () => {
   const handleLike = async () => {
     if (!user) {
       toast.error("Connectez-vous pour aimer cet article");
+      navigate('/auth');
       return;
     }
 
@@ -237,24 +238,41 @@ const ArticleDetail = () => {
 
     try {
       if (hasLiked) {
+        // Remove like from article_likes
         await supabase
           .from('article_likes')
           .delete()
           .eq('article_id', article.id)
           .eq('user_id', user.id);
         
+        // Update likes count in articles table
+        await supabase
+          .from('articles')
+          .update({ likes: Math.max(0, (article.likes || 0) - 1) })
+          .eq('id', article.id);
+        
         setHasLiked(false);
-        setArticle(prev => prev ? { ...prev, likes: prev.likes - 1 } : null);
+        setArticle(prev => prev ? { ...prev, likes: Math.max(0, prev.likes - 1) } : null);
+        toast.success("Like retiré");
       } else {
+        // Add like to article_likes
         await supabase
           .from('article_likes')
           .insert({ article_id: article.id, user_id: user.id });
         
+        // Update likes count in articles table
+        await supabase
+          .from('articles')
+          .update({ likes: (article.likes || 0) + 1 })
+          .eq('id', article.id);
+        
         setHasLiked(true);
-        setArticle(prev => prev ? { ...prev, likes: prev.likes + 1 } : null);
+        setArticle(prev => prev ? { ...prev, likes: (prev.likes || 0) + 1 } : null);
+        toast.success("Article aimé !");
       }
     } catch (error) {
       console.error('Error toggling like:', error);
+      toast.error("Erreur lors de l'action");
     }
   };
 
