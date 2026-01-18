@@ -55,6 +55,9 @@ import PlatformSettings from "@/components/admin/PlatformSettings";
 import AdvancedStats from "@/components/admin/AdvancedStats";
 import BackupSettings from "@/components/admin/BackupSettings";
 import PaymentsTab from "@/components/admin/PaymentsTab";
+import ShareStatsTab from "@/components/admin/ShareStatsTab";
+
+import { Share2 } from "lucide-react";
 
 type TabType =
   | "dashboard"
@@ -70,6 +73,7 @@ type TabType =
   | "advertisements"
   | "faq"
   | "stats"
+  | "sharestats"
   | "settings"
   | "database"
   | "vendors"
@@ -122,6 +126,7 @@ const Admin = () => {
   const menuItems = [
     { id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { id: "stats", label: "Statistiques", icon: BarChart3 },
+    { id: "sharestats", label: "Partages & Analytics", icon: Share2 },
     { id: "products", label: "Produits", icon: Package },
     { id: "categories", label: "Catégories", icon: FolderTree },
     { id: "orders", label: "Commandes", icon: ShoppingBag },
@@ -167,6 +172,22 @@ const Admin = () => {
       <Navbar />
       
       <div className="pt-20 min-h-screen flex">
+        {/* Fixed Admin Header with menu toggle - visible on all screen sizes */}
+        <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border lg:hidden">
+          <div className="flex items-center justify-between px-4 py-2">
+            <h2 className="text-lg font-display font-bold text-foreground">Admin</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileMenuOpen(true)}
+              className="gap-2"
+            >
+              <Menu size={18} />
+              Menu
+            </Button>
+          </div>
+        </div>
+
         {/* Sidebar - Desktop */}
         <aside className="w-64 bg-card border-r border-border hidden lg:block sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto">
           <div className="p-6">
@@ -190,42 +211,47 @@ const Admin = () => {
           </nav>
         </aside>
 
-        {/* Mobile Menu Button & Sheet */}
+        {/* Mobile Menu Sheet */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent side="left" className="w-72 p-0 z-[60]">
+            <SheetHeader className="p-6 border-b border-border">
+              <SheetTitle>Administration</SheetTitle>
+            </SheetHeader>
+            <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-100px)]">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabChange(item.id as TabType)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm ${
+                    activeTab === item.id
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <item.icon size={18} />
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
+
+        {/* Floating Menu Button (bottom right) - Mobile fallback */}
         <div className="lg:hidden fixed bottom-4 right-4 z-50">
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button size="icon" className="h-14 w-14 rounded-full shadow-lg">
-                <Menu size={24} />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <SheetHeader className="p-6 border-b border-border">
-                <SheetTitle>Administration</SheetTitle>
-              </SheetHeader>
-              <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-100px)]">
-                {menuItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleTabChange(item.id as TabType)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm ${
-                      activeTab === item.id
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon size={18} />
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
+          <Button
+            size="icon"
+            className="h-14 w-14 rounded-full shadow-lg"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu size={24} />
+          </Button>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 pt-16 lg:pt-4">
           {activeTab === "dashboard" && <AdminDashboard />}
           {activeTab === "stats" && <AdvancedStats />}
+          {activeTab === "sharestats" && <ShareStatsTab />}
           {activeTab === "products" && <ProductsTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "orders" && <OrdersTab />}

@@ -110,6 +110,19 @@ const SocialShare = ({
 
     if (!articleId) return;
 
+    // Log analytics event (insert directly - RLS allows insert)
+    // Note: analytics_events table may not be in generated types yet
+    try {
+      await (supabase as any).from("analytics_events").insert({
+        event_type: "share",
+        article_id: articleId,
+        platform: platform,
+        event_data: { title },
+      });
+    } catch {
+      // silent fail for analytics
+    }
+
     const { data, error } = await supabase.rpc("increment_article_share", {
       _article_id: articleId,
       _platform: platform,
