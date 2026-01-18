@@ -25,6 +25,7 @@ import Footer from "@/components/Footer";
 import SmartImage from "@/components/SmartImage";
 import SEOHead from "@/components/SEOHead";
 import ArticleReactions from "@/components/ArticleReactions";
+import MediaLightbox from "@/components/MediaLightbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -99,6 +100,8 @@ const ArticleDetail = () => {
   const [hasPurchased, setHasPurchased] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -500,15 +503,18 @@ const ArticleDetail = () => {
           </header>
 
           {/* Cover Image / Media Gallery */}
-          {article.media && article.media.length > 1 ? (
+          {article.media && article.media.length > 0 ? (
             <div className="mb-8 space-y-4">
-              {/* Main image/video */}
-              <div className="aspect-video bg-muted rounded-xl overflow-hidden">
+              {/* Main image/video - clickable for lightbox */}
+              <div 
+                className="aspect-video bg-muted rounded-xl overflow-hidden cursor-pointer relative group"
+                onClick={() => { setLightboxIndex(0); setLightboxOpen(true); }}
+              >
                 {article.media[0].type === "video" ? (
                   <video
                     src={article.media[0].url}
                     className="w-full h-full object-cover"
-                    controls
+                    muted
                     playsInline
                   />
                 ) : (
@@ -519,12 +525,23 @@ const ArticleDetail = () => {
                     fallbackSrc="/placeholder.svg"
                   />
                 )}
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white bg-black/50 px-4 py-2 rounded-full text-sm">
+                    Cliquer pour agrandir
+                  </span>
+                </div>
               </div>
-              {/* Thumbnails */}
+              
+              {/* Thumbnails - clickable */}
               {article.media.length > 1 && (
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                   {article.media.slice(1).map((media, idx) => (
-                    <div key={idx} className="aspect-video bg-muted rounded-lg overflow-hidden">
+                    <div 
+                      key={idx} 
+                      className="aspect-video bg-muted rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                      onClick={() => { setLightboxIndex(idx + 1); setLightboxOpen(true); }}
+                    >
                       {media.type === "video" ? (
                         <video
                           src={media.url}
@@ -544,15 +561,39 @@ const ArticleDetail = () => {
                   ))}
                 </div>
               )}
+              
+              {/* Lightbox */}
+              <MediaLightbox
+                media={article.media}
+                initialIndex={lightboxIndex}
+                isOpen={lightboxOpen}
+                onClose={() => setLightboxOpen(false)}
+              />
             </div>
           ) : (
-            <div className="aspect-video bg-muted rounded-xl overflow-hidden mb-8">
+            <div 
+              className="aspect-video bg-muted rounded-xl overflow-hidden mb-8 cursor-pointer"
+              onClick={() => {
+                if (article.cover_image) {
+                  setLightboxIndex(0);
+                  setLightboxOpen(true);
+                }
+              }}
+            >
               <SmartImage
                 src={article.cover_image}
                 alt={getTitle()}
                 className="w-full h-full object-cover"
                 fallbackSrc="/placeholder.svg"
               />
+              {article.cover_image && (
+                <MediaLightbox
+                  media={[{ url: article.cover_image, type: "image" }]}
+                  initialIndex={0}
+                  isOpen={lightboxOpen}
+                  onClose={() => setLightboxOpen(false)}
+                />
+              )}
             </div>
           )}
 
