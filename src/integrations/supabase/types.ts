@@ -206,6 +206,39 @@ export type Database = {
           },
         ]
       }
+      article_share_counts: {
+        Row: {
+          article_id: string
+          facebook: number
+          linkedin: number
+          telegram: number
+          total: number
+          twitter: number
+          updated_at: string
+          whatsapp: number
+        }
+        Insert: {
+          article_id: string
+          facebook?: number
+          linkedin?: number
+          telegram?: number
+          total?: number
+          twitter?: number
+          updated_at?: string
+          whatsapp?: number
+        }
+        Update: {
+          article_id?: string
+          facebook?: number
+          linkedin?: number
+          telegram?: number
+          total?: number
+          twitter?: number
+          updated_at?: string
+          whatsapp?: number
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           author_id: string
@@ -1319,6 +1352,25 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_article_share: {
+        Args: { _article_id: string; _platform: string }
+        Returns: {
+          article_id: string
+          facebook: number
+          linkedin: number
+          telegram: number
+          total: number
+          twitter: number
+          updated_at: string
+          whatsapp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "article_share_counts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       validate_coupon: {
         Args: { _code: string; _order_total: number }
