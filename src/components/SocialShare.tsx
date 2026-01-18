@@ -1,4 +1,4 @@
-import { Facebook, MessageCircle, Twitter, Link as LinkIcon, Share2 } from "lucide-react";
+import { Facebook, MessageCircle, Twitter, Link as LinkIcon, Share2, Linkedin, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +23,8 @@ const SocialShare = ({ title, text, url, variant = "default" }: SocialShareProps
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(title)}`,
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`,
     whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title}\n${shareUrl}`)}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
+    telegram: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`,
   };
 
   const handleShare = (platform: keyof typeof shareLinks) => {
@@ -83,6 +85,24 @@ const SocialShare = ({ title, text, url, variant = "default" }: SocialShareProps
         <Button
           variant="outline"
           size="icon"
+          onClick={() => handleShare('linkedin')}
+          className="text-[#0A66C2] hover:bg-[#0A66C2]/10 bg-background shadow-md"
+          title="Partager sur LinkedIn"
+        >
+          <Linkedin size={18} />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => handleShare('telegram')}
+          className="text-[#0088CC] hover:bg-[#0088CC]/10 bg-background shadow-md"
+          title="Partager sur Telegram"
+        >
+          <Send size={18} />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
           onClick={handleCopyLink}
           className="bg-background shadow-md"
           title="Copier le lien"
@@ -113,6 +133,14 @@ const SocialShare = ({ title, text, url, variant = "default" }: SocialShareProps
         <DropdownMenuItem onClick={() => handleShare('twitter')} className="cursor-pointer">
           <Twitter size={16} className="mr-2 text-[#1DA1F2]" />
           Twitter / X
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare('linkedin')} className="cursor-pointer">
+          <Linkedin size={16} className="mr-2 text-[#0A66C2]" />
+          LinkedIn
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare('telegram')} className="cursor-pointer">
+          <Send size={16} className="mr-2 text-[#0088CC]" />
+          Telegram
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer">
           <LinkIcon size={16} className="mr-2" />
