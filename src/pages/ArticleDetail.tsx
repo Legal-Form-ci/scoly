@@ -749,6 +749,16 @@ const ArticleDetail = () => {
         </div>
       </article>
 
+      {/* Floating Share Buttons */}
+      <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-2">
+        <SocialShare 
+          title={getTitle()} 
+          text={getExcerpt() || undefined}
+          url={`https://izy-scoly.ci/actualites/${article.id}`}
+          variant="icon-only"
+        />
+      </div>
+
       <Footer />
     </main>
   );

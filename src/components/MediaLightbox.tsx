@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, ChevronLeft, ChevronRight, Play, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Play, ZoomIn, ZoomOut, RotateCcw, Maximize, Minimize } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface MediaItem {
@@ -20,11 +20,15 @@ const MediaLightbox = ({ media, initialIndex = 0, isOpen, onClose }: MediaLightb
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
     resetZoom();
+    setIsFullscreen(false);
   }, [initialIndex]);
 
   const resetZoom = () => {
@@ -57,6 +61,10 @@ const MediaLightbox = ({ media, initialIndex = 0, isOpen, onClose }: MediaLightb
       case "0":
         resetZoom();
         break;
+      case "f":
+      case "F":
+        toggleFullscreen();
+        break;
     }
   }, [isOpen, media.length, onClose]);
 
@@ -70,11 +78,24 @@ const MediaLightbox = ({ media, initialIndex = 0, isOpen, onClose }: MediaLightb
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
+      // Exit fullscreen when closing
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
     }
     return () => {
       document.body.style.overflow = "";
     };
   }, [isOpen]);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : media.length - 1));
@@ -84,6 +105,28 @@ const MediaLightbox = ({ media, initialIndex = 0, isOpen, onClose }: MediaLightb
   const goToNext = () => {
     setCurrentIndex((prev) => (prev < media.length - 1 ? prev + 1 : 0));
     resetZoom();
+  };
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        // For video, use the video element's fullscreen
+        if (currentMedia?.type === "video" && videoRef.current) {
+          if (videoRef.current.requestFullscreen) {
+            await videoRef.current.requestFullscreen();
+          } else if ((videoRef.current as any).webkitEnterFullscreen) {
+            // iOS Safari
+            (videoRef.current as any).webkitEnterFullscreen();
+          }
+        } else if (containerRef.current) {
+          await containerRef.current.requestFullscreen();
+        }
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
+    }
   };
 
   const handleZoomIn = () => {
@@ -99,6 +142,7 @@ const MediaLightbox = ({ media, initialIndex = 0, isOpen, onClose }: MediaLightb
       return newScale;
     });
   };
+
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -196,7 +240,7 @@ const MediaLightbox = ({ media, initialIndex = 0, isOpen, onClose }: MediaLightb
         </div>
 
         {/* Zoom controls */}
-        {currentMedia.type === "image" && (
+        {currentMedia.type === "image" ? (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/10 rounded-full px-2 py-1">
             <button
               onClick={handleZoomOut}
@@ -224,6 +268,24 @@ const MediaLightbox = ({ media, initialIndex = 0, isOpen, onClose }: MediaLightb
               aria-label="Réinitialiser"
             >
               <RotateCcw size={18} />
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+              aria-label={isFullscreen ? "Quitter plein écran" : "Plein écran"}
+            >
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+            </button>
+          </div>
+        ) : (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/10 rounded-full px-3 py-1">
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-full hover:bg-white/20 text-white transition-colors flex items-center gap-2"
+              aria-label={isFullscreen ? "Quitter plein écran" : "Plein écran"}
+            >
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+              <span className="text-sm">Plein écran (F)</span>
             </button>
           </div>
         )}
@@ -259,13 +321,16 @@ const MediaLightbox = ({ media, initialIndex = 0, isOpen, onClose }: MediaLightb
           onClick={(e) => e.stopPropagation()}
         >
           {currentMedia.type === "video" ? (
-            <video
-              src={currentMedia.url}
-              className="max-w-full max-h-[85vh] rounded-lg"
-              controls
-              autoPlay
-              playsInline
-            />
+            <div className="relative">
+              <video
+                ref={videoRef}
+                src={currentMedia.url}
+                className="max-w-full max-h-[85vh] rounded-lg"
+                controls
+                autoPlay
+                playsInline
+              />
+            </div>
           ) : (
             <div
               ref={imageRef}
