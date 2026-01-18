@@ -18,6 +18,7 @@ import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import ProductDetail from "./pages/ProductDetail";
 import Actualites from "./pages/Actualites";
+import ArticleDetail from "./pages/ArticleDetail";
 import WriteArticle from "./pages/WriteArticle";
 import TeamDashboard from "./pages/TeamDashboard";
 import AuthorDashboard from "./pages/AuthorDashboard";
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/account" element={<Account />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/actualites" element={<Actualites />} />
+                <Route path="/actualites/:id" element={<ArticleDetail />} />
                 <Route path="/actualites/write" element={<WriteArticle />} />
                 <Route path="/team" element={<TeamDashboard />} />
                 <Route path="/author" element={<AuthorDashboard />} />

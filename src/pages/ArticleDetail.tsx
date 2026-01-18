@@ -1,0 +1,638 @@
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { 
+  Calendar, 
+  Eye, 
+  Heart, 
+  Share2, 
+  ArrowLeft, 
+  Clock, 
+  User, 
+  Lock,
+  BookOpen,
+  MessageCircle,
+  Send
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import SmartImage from "@/components/SmartImage";
+import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+
+interface Article {
+  id: string;
+  title_fr: string;
+  title_en: string;
+  title_de: string;
+  title_es: string;
+  content_fr: string | null;
+  content_en: string | null;
+  content_de: string | null;
+  content_es: string | null;
+  excerpt_fr: string | null;
+  excerpt_en: string | null;
+  cover_image: string | null;
+  category: string;
+  is_premium: boolean;
+  price: number | null;
+  views: number;
+  likes: number;
+  published_at: string | null;
+  author_id: string;
+  created_at: string | null;
+}
+
+interface Author {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string | null;
+  user_id: string;
+  is_approved: boolean;
+  profile?: Author;
+}
+
+interface RelatedArticle {
+  id: string;
+  title_fr: string;
+  title_en: string;
+  cover_image: string | null;
+  category: string;
+  views: number;
+}
+
+const ArticleDetail = () => {
+  const { id } = useParams<{ id: string }>();
+  const { language } = useLanguage();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const [article, setArticle] = useState<Article | null>(null);
+  const [author, setAuthor] = useState<Author | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [relatedArticles, setRelatedArticles] = useState<RelatedArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      fetchArticle();
+      incrementViews();
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (user && article) {
+      checkUserInteractions();
+    }
+  }, [user, article]);
+
+  const fetchArticle = async () => {
+    if (!id) return;
+    
+    setLoading(true);
+    try {
+      // Fetch article
+      const { data: articleData, error: articleError } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', id)
+        .eq('status', 'published')
+        .single();
+
+      if (articleError) throw articleError;
+      setArticle(articleData);
+
+      // Fetch author
+      if (articleData?.author_id) {
+        const { data: authorData } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('id', articleData.author_id)
+          .single();
+        
+        setAuthor(authorData);
+      }
+
+      // Fetch comments
+      const { data: commentsData } = await supabase
+        .from('article_comments')
+        .select('*')
+        .eq('article_id', id)
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (commentsData) {
+        // Fetch comment authors
+        const userIds = [...new Set(commentsData.map(c => c.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .in('id', userIds);
+
+        const commentsWithProfiles = commentsData.map(comment => ({
+          ...comment,
+          profile: profiles?.find(p => p.id === comment.user_id)
+        }));
+
+        setComments(commentsWithProfiles);
+      }
+
+      // Fetch related articles
+      if (articleData?.category) {
+        const { data: relatedData } = await supabase
+          .from('articles')
+          .select('id, title_fr, title_en, cover_image, category, views')
+          .eq('status', 'published')
+          .eq('category', articleData.category)
+          .neq('id', id)
+          .limit(4);
+
+        setRelatedArticles(relatedData || []);
+      }
+    } catch (error) {
+      console.error('Error fetching article:', error);
+      toast.error("Article non trouvé");
+      navigate('/actualites');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const incrementViews = async () => {
+    if (!id) return;
+    try {
+      // Increment views directly
+      const { data: currentArticle } = await supabase
+        .from('articles')
+        .select('views')
+        .eq('id', id)
+        .single();
+      
+      if (currentArticle) {
+        await supabase
+          .from('articles')
+          .update({ views: (currentArticle.views || 0) + 1 })
+          .eq('id', id);
+      }
+    } catch (error) {
+      console.error('Error incrementing views:', error);
+    }
+  };
+
+  const checkUserInteractions = async () => {
+    if (!user || !article) return;
+
+    // Check if liked
+    const { data: likeData } = await supabase
+      .from('article_likes')
+      .select('id')
+      .eq('article_id', article.id)
+      .eq('user_id', user.id)
+      .single();
+
+    setHasLiked(!!likeData);
+
+    // Check if purchased (for premium articles)
+    if (article.is_premium) {
+      const { data: purchaseData } = await supabase
+        .from('article_purchases')
+        .select('id')
+        .eq('article_id', article.id)
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .single();
+
+      setHasPurchased(!!purchaseData);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!user) {
+      toast.error("Connectez-vous pour aimer cet article");
+      return;
+    }
+
+    if (!article) return;
+
+    try {
+      if (hasLiked) {
+        await supabase
+          .from('article_likes')
+          .delete()
+          .eq('article_id', article.id)
+          .eq('user_id', user.id);
+        
+        setHasLiked(false);
+        setArticle(prev => prev ? { ...prev, likes: prev.likes - 1 } : null);
+      } else {
+        await supabase
+          .from('article_likes')
+          .insert({ article_id: article.id, user_id: user.id });
+        
+        setHasLiked(true);
+        setArticle(prev => prev ? { ...prev, likes: prev.likes + 1 } : null);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: getTitle(),
+        text: getExcerpt(),
+        url: window.location.href
+      });
+    } catch {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Lien copié !");
+    }
+  };
+
+  const submitComment = async () => {
+    if (!user) {
+      toast.error("Connectez-vous pour commenter");
+      return;
+    }
+
+    if (!newComment.trim() || !article) return;
+
+    setSubmittingComment(true);
+    try {
+      await supabase
+        .from('article_comments')
+        .insert({
+          article_id: article.id,
+          user_id: user.id,
+          content: newComment.trim(),
+          is_approved: false
+        });
+
+      setNewComment("");
+      toast.success("Commentaire soumis pour modération");
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+      toast.error("Erreur lors de l'envoi du commentaire");
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const getTitle = () => {
+    if (!article) return "";
+    switch (language) {
+      case 'en': return article.title_en;
+      case 'de': return article.title_de;
+      case 'es': return article.title_es;
+      default: return article.title_fr;
+    }
+  };
+
+  const getContent = () => {
+    if (!article) return "";
+    switch (language) {
+      case 'en': return article.content_en;
+      case 'de': return article.content_de;
+      case 'es': return article.content_es;
+      default: return article.content_fr;
+    }
+  };
+
+  const getExcerpt = () => {
+    if (!article) return "";
+    switch (language) {
+      case 'en': return article.excerpt_en;
+      default: return article.excerpt_fr;
+    }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const categories: Record<string, string> = {
+      'general': 'Général',
+      'education': 'Éducation',
+      'bureautique': 'Bureautique',
+      'resources': 'Ressources',
+      'news': 'Actualités',
+      'guides': 'Guides'
+    };
+    return categories[category] || category;
+  };
+
+  const canViewContent = () => {
+    if (!article) return false;
+    if (!article.is_premium) return true;
+    if (article.author_id === user?.id) return true;
+    return hasPurchased;
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-12">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <Skeleton className="h-8 w-32 mb-4" />
+            <Skeleton className="h-12 w-3/4 mb-6" />
+            <Skeleton className="aspect-video w-full mb-8 rounded-xl" />
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
+
+  if (!article) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-12 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <BookOpen className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-2">Article non trouvé</h2>
+            <p className="text-muted-foreground mb-6">Cet article n'existe pas ou a été supprimé.</p>
+            <Link to="/actualites">
+              <Button>
+                <ArrowLeft size={18} />
+                Retour aux actualités
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-background">
+      <Navbar />
+      
+      <article className="pt-24 pb-12">
+        <div className="container mx-auto px-4 max-w-4xl">
+          {/* Back Button */}
+          <Link 
+            to="/actualites" 
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 transition-colors"
+          >
+            <ArrowLeft size={18} />
+            Retour aux actualités
+          </Link>
+
+          {/* Header */}
+          <header className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Badge variant="secondary">{getCategoryLabel(article.category)}</Badge>
+              {article.is_premium && (
+                <Badge className="bg-accent">
+                  <Lock size={12} className="mr-1" />
+                  Premium
+                </Badge>
+              )}
+            </div>
+
+            <h1 className="text-3xl lg:text-4xl font-display font-bold text-foreground mb-6">
+              {getTitle()}
+            </h1>
+
+            {/* Meta */}
+            <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+              {author && (
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={author.avatar_url || undefined} />
+                    <AvatarFallback>
+                      {author.first_name?.[0]}{author.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-foreground">
+                    {author.first_name} {author.last_name}
+                  </span>
+                </div>
+              )}
+              
+              {article.published_at && (
+                <span className="flex items-center gap-1">
+                  <Calendar size={14} />
+                  {new Date(article.published_at).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              )}
+
+              <span className="flex items-center gap-1">
+                <Clock size={14} />
+                5 min de lecture
+              </span>
+            </div>
+          </header>
+
+          {/* Cover Image */}
+          <div className="aspect-video bg-muted rounded-xl overflow-hidden mb-8">
+            <SmartImage
+              src={article.cover_image}
+              alt={getTitle()}
+              className="w-full h-full object-cover"
+              fallbackSrc="/placeholder.svg"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between mb-8 pb-6 border-b">
+            <div className="flex items-center gap-4">
+              <Button
+                variant={hasLiked ? "default" : "outline"}
+                size="sm"
+                onClick={handleLike}
+              >
+                <Heart size={16} className={hasLiked ? "fill-current" : ""} />
+                {article.likes}
+              </Button>
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Eye size={14} />
+                {article.views} vues
+              </span>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleShare}>
+              <Share2 size={16} />
+              Partager
+            </Button>
+          </div>
+
+          {/* Content */}
+          {canViewContent() ? (
+            <div 
+              className="prose prose-lg dark:prose-invert max-w-none mb-12"
+              dangerouslySetInnerHTML={{ __html: getContent() || getExcerpt() || "" }}
+            />
+          ) : (
+            <div className="mb-12">
+              <div 
+                className="prose prose-lg dark:prose-invert max-w-none mb-6 relative"
+                style={{ maxHeight: '200px', overflow: 'hidden' }}
+              >
+                <div 
+                  dangerouslySetInnerHTML={{ __html: getExcerpt() || "" }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+              </div>
+              
+              <Card className="bg-accent/5 border-accent">
+                <CardContent className="p-6 text-center">
+                  <Lock className="mx-auto h-12 w-12 text-accent mb-4" />
+                  <h3 className="text-xl font-bold text-foreground mb-2">Contenu Premium</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Cet article est réservé aux abonnés. Achetez-le pour accéder au contenu complet.
+                  </p>
+                  <Link to={`/article/pay/${article.id}`}>
+                    <Button variant="hero">
+                      Acheter pour {article.price?.toLocaleString()} FCFA
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <Separator className="my-8" />
+
+          {/* Comments Section */}
+          <section>
+            <h3 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+              <MessageCircle size={20} />
+              Commentaires ({comments.length})
+            </h3>
+
+            {/* New Comment Form */}
+            {user ? (
+              <div className="mb-8">
+                <Textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Écrivez un commentaire..."
+                  className="mb-3"
+                  rows={3}
+                />
+                <Button 
+                  onClick={submitComment} 
+                  disabled={submittingComment || !newComment.trim()}
+                >
+                  <Send size={16} />
+                  {submittingComment ? "Envoi..." : "Envoyer"}
+                </Button>
+              </div>
+            ) : (
+              <Card className="mb-8 bg-muted/50">
+                <CardContent className="p-4 text-center">
+                  <p className="text-muted-foreground mb-3">Connectez-vous pour commenter</p>
+                  <Link to="/auth">
+                    <Button variant="outline" size="sm">Se connecter</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Comments List */}
+            {comments.length > 0 ? (
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <Card key={comment.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={comment.profile?.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {comment.profile?.first_name?.[0]}{comment.profile?.last_name?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-foreground">
+                              {comment.profile?.first_name} {comment.profile?.last_name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {comment.created_at && new Date(comment.created_at).toLocaleDateString('fr-FR')}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground">{comment.content}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Aucun commentaire pour le moment. Soyez le premier à commenter !
+              </p>
+            )}
+          </section>
+
+          {/* Related Articles */}
+          {relatedArticles.length > 0 && (
+            <section className="mt-12">
+              <h3 className="text-xl font-bold text-foreground mb-6">Articles similaires</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {relatedArticles.map((related) => (
+                  <Link key={related.id} to={`/actualites/${related.id}`}>
+                    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="flex">
+                        <div className="w-24 h-24 flex-shrink-0">
+                          <SmartImage
+                            src={related.cover_image}
+                            alt={language === 'en' ? related.title_en : related.title_fr}
+                            className="w-full h-full object-cover"
+                            fallbackSrc="/placeholder.svg"
+                          />
+                        </div>
+                        <CardContent className="p-3 flex-1">
+                          <Badge variant="outline" className="text-xs mb-2">
+                            {getCategoryLabel(related.category)}
+                          </Badge>
+                          <h4 className="font-medium text-sm text-foreground line-clamp-2">
+                            {language === 'en' ? related.title_en : related.title_fr}
+                          </h4>
+                        </CardContent>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </article>
+
+      <Footer />
+    </main>
+  );
+};
+
+export default ArticleDetail;

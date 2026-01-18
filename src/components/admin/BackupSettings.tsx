@@ -7,9 +7,11 @@ import {
   AlertTriangle,
   Loader2,
   HardDrive,
-  Settings,
   Calendar,
-  Link2
+  Link2,
+  RefreshCw,
+  Download,
+  History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +19,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,9 +32,18 @@ interface BackupConfig {
   nextBackup: string | null;
 }
 
+interface BackupHistory {
+  date: string;
+  provider: string;
+  status: string;
+}
+
 const BackupSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
+  const [backupHistory, setBackupHistory] = useState<BackupHistory[]>([]);
   const [config, setConfig] = useState<BackupConfig>({
     enabled: false,
     frequency: 'daily',
@@ -57,20 +67,50 @@ const BackupSettings = () => {
 
   const loadSettings = async () => {
     try {
-      const { data } = await supabase
+      // Load config
+      const { data: configData } = await supabase
         .from('platform_settings')
         .select('*')
         .eq('key', 'backup_config')
         .single();
       
-      if (data?.value) {
-        const savedConfig = JSON.parse(data.value);
+      if (configData?.value) {
+        const savedConfig = JSON.parse(configData.value);
         setConfig(prev => ({ ...prev, ...savedConfig }));
       }
+
+      // Load credentials
+      const { data: credData } = await supabase
+        .from('platform_settings')
+        .select('*')
+        .eq('key', 'backup_credentials')
+        .single();
+      
+      if (credData?.value) {
+        const savedCreds = JSON.parse(credData.value);
+        setCredentials(prev => ({ ...prev, ...savedCreds }));
+      }
+
+      // Load backup history
+      await loadBackupHistory();
     } catch (error) {
       console.error('Error loading backup settings:', error);
     }
     setLoading(false);
+  };
+
+  const loadBackupHistory = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('cloud-backup', {
+        body: { action: 'list_backups', provider: config.provider }
+      });
+
+      if (!error && data?.backups) {
+        setBackupHistory(data.backups);
+      }
+    } catch (error) {
+      console.error('Error loading backup history:', error);
+    }
   };
 
   const saveSettings = async () => {
@@ -129,79 +169,79 @@ const BackupSettings = () => {
   };
 
   const testConnection = async () => {
-    toast.info('Test de connexion en cours...');
-    
-    // Simulate connection test
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    if (config.provider === 'local') {
-      toast.success('Connexion locale prête');
-    } else if (config.provider === 'google_drive') {
-      if (credentials.googleDriveApiKey) {
-        toast.success('Connexion Google Drive validée');
+    setTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('cloud-backup', {
+        body: { 
+          action: 'test_connection', 
+          provider: config.provider,
+          credentials: config.provider !== 'local' ? credentials : undefined
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(data.message);
       } else {
-        toast.error('Clé API Google Drive requise');
+        toast.error(data?.message || 'Échec du test de connexion');
       }
-    } else if (config.provider === 'ovh') {
-      if (credentials.ovhEndpoint && credentials.ovhAccessKey && credentials.ovhSecretKey) {
-        toast.success('Connexion OVH Object Storage validée');
-      } else {
-        toast.error('Identifiants OVH incomplets');
-      }
+    } catch (error) {
+      console.error('Connection test error:', error);
+      toast.error('Erreur lors du test de connexion');
     }
+    setTesting(false);
   };
 
   const runManualBackup = async () => {
-    toast.info('Sauvegarde manuelle en cours...');
+    setBackingUp(true);
+    toast.info('Sauvegarde en cours...');
     
     try {
-      // Fetch all data for backup
-      const tables = [
-        'profiles', 'products', 'categories', 'orders', 'order_items',
-        'articles', 'advertisements', 'coupons', 'faq'
-      ];
-      
-      const backupData: Record<string, any[]> = {};
-      
-      for (const table of tables) {
-        const { data } = await supabase.from(table as any).select('*');
-        if (data) {
-          backupData[table] = data;
+      const { data, error } = await supabase.functions.invoke('cloud-backup', {
+        body: { 
+          action: 'backup', 
+          provider: config.provider,
+          credentials: config.provider !== 'local' ? credentials : undefined
         }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        // For local provider, trigger download
+        if (config.provider === 'local' && data.data) {
+          const content = JSON.stringify(data.data, null, 2);
+          const blob = new Blob([content], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = data.fileName || `izy-scoly-backup-${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        // Update config with last backup time
+        const newConfig = {
+          ...config,
+          lastBackup: new Date().toISOString()
+        };
+        setConfig(newConfig);
+
+        toast.success(data.message || 'Sauvegarde terminée');
+        
+        // Refresh backup history
+        await loadBackupHistory();
+      } else {
+        toast.error(data?.message || 'Échec de la sauvegarde');
       }
-
-      // Create backup file
-      const content = JSON.stringify(backupData, null, 2);
-      const blob = new Blob([content], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `izy-scoly-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      // Update last backup time
-      const newConfig = {
-        ...config,
-        lastBackup: new Date().toISOString()
-      };
-      
-      await supabase
-        .from('platform_settings')
-        .upsert({
-          key: 'backup_config',
-          value: JSON.stringify(newConfig),
-          description: 'Configuration de sauvegarde automatique'
-        }, { onConflict: 'key' });
-
-      setConfig(newConfig);
-      toast.success('Sauvegarde manuelle terminée');
     } catch (error) {
       console.error('Backup error:', error);
       toast.error('Erreur lors de la sauvegarde');
     }
+    setBackingUp(false);
   };
 
   if (loading) {
@@ -220,8 +260,8 @@ const BackupSettings = () => {
           <p className="text-muted-foreground">Configurez les sauvegardes automatiques de votre base de données</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={runManualBackup}>
-            <Save size={18} />
+          <Button variant="outline" onClick={runManualBackup} disabled={backingUp}>
+            {backingUp ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
             Sauvegarde manuelle
           </Button>
           <Button onClick={saveSettings} disabled={saving}>
@@ -236,12 +276,12 @@ const BackupSettings = () => {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${config.enabled ? 'bg-green-100 dark:bg-green-900/20' : 'bg-gray-100 dark:bg-gray-900/20'}`}>
-                <Cloud className={`h-6 w-6 ${config.enabled ? 'text-green-600' : 'text-gray-600'}`} />
+              <div className={`p-3 rounded-xl ${config.enabled ? 'bg-green-100 dark:bg-green-900/20' : 'bg-muted'}`}>
+                <Cloud className={`h-6 w-6 ${config.enabled ? 'text-green-600' : 'text-muted-foreground'}`} />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Statut</p>
-                <p className="font-semibold">
+                <p className="font-semibold text-foreground">
                   {config.enabled ? 'Activé' : 'Désactivé'}
                 </p>
               </div>
@@ -256,7 +296,7 @@ const BackupSettings = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Dernière sauvegarde</p>
-                <p className="font-semibold">
+                <p className="font-semibold text-foreground">
                   {config.lastBackup 
                     ? new Date(config.lastBackup).toLocaleDateString('fr-FR', { 
                         day: 'numeric', 
@@ -279,7 +319,7 @@ const BackupSettings = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Prochaine sauvegarde</p>
-                <p className="font-semibold">
+                <p className="font-semibold text-foreground">
                   {config.nextBackup && config.enabled
                     ? new Date(config.nextBackup).toLocaleDateString('fr-FR', { 
                         day: 'numeric', 
@@ -306,7 +346,7 @@ const BackupSettings = () => {
           {/* Enable Toggle */}
           <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
             <div>
-              <p className="font-medium">Activer les sauvegardes automatiques</p>
+              <p className="font-medium text-foreground">Activer les sauvegardes automatiques</p>
               <p className="text-sm text-muted-foreground">
                 La base de données sera sauvegardée automatiquement selon la fréquence choisie
               </p>
@@ -420,13 +460,16 @@ const BackupSettings = () => {
                   onChange={(e) => setCredentials(prev => ({ ...prev, googleDriveApiKey: e.target.value }))}
                   placeholder="Entrez votre clé API"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Créez une clé API dans la <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a>
+                </p>
               </div>
             )}
 
             {config.provider === 'ovh' && (
               <>
                 <div className="space-y-2">
-                  <Label>Endpoint</Label>
+                  <Label>Endpoint S3</Label>
                   <Input
                     value={credentials.ovhEndpoint}
                     onChange={(e) => setCredentials(prev => ({ ...prev, ovhEndpoint: e.target.value }))}
@@ -462,24 +505,63 @@ const BackupSettings = () => {
               </>
             )}
 
-            <Button variant="outline" onClick={testConnection}>
-              <Link2 size={16} />
+            <Button variant="outline" onClick={testConnection} disabled={testing}>
+              {testing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
               Tester la connexion
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Warning */}
-      <Card className="border-yellow-200 dark:border-yellow-900">
+      {/* Backup History */}
+      {backupHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History size={20} />
+              Historique des sauvegardes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {backupHistory.map((backup, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {new Date(backup.date).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {backup.provider === 'local' ? 'Téléchargement local' : 
+                         backup.provider === 'google_drive' ? 'Google Drive' : 'OVH'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-sm text-green-600 font-medium">Complété</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Info */}
+      <Card className="border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
-              <p className="font-medium text-yellow-800 dark:text-yellow-200">Information importante</p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Les sauvegardes automatiques vers Google Drive ou OVH nécessitent une configuration 
-                supplémentaire côté serveur. Contactez l'administrateur système pour activer cette fonctionnalité.
+              <p className="font-medium text-blue-800 dark:text-blue-200">Information</p>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Les sauvegardes locales sont téléchargées sur votre appareil. Pour les sauvegardes cloud 
+                (Google Drive ou OVH), configurez les identifiants et testez la connexion avant d'activer.
               </p>
             </div>
           </div>
