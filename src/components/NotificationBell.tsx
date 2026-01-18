@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Check, CheckCheck, Package, CreditCard, Newspaper, X } from 'lucide-react';
+import { Bell, Check, CheckCheck, Package, CreditCard, Newspaper, Heart, MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -10,9 +10,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationBell = () => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useRealtimeNotifications();
 
   const getIcon = (type: string) => {
@@ -23,8 +25,28 @@ const NotificationBell = () => {
         return <CreditCard size={16} className="text-green-500" />;
       case 'article':
         return <Newspaper size={16} className="text-blue-500" />;
+      case 'reaction':
+        return <Heart size={16} className="text-pink-500" />;
+      case 'comment':
+        return <MessageCircle size={16} className="text-orange-500" />;
       default:
         return <Bell size={16} className="text-muted-foreground" />;
+    }
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    
+    // Navigate based on notification type
+    const data = notification.data as Record<string, any> | null;
+    if (data?.article_id && (notification.type === 'reaction' || notification.type === 'comment')) {
+      setOpen(false);
+      navigate(`/actualites/${data.article_id}`);
+    } else if (data?.order_id && notification.type === 'order') {
+      setOpen(false);
+      navigate('/account');
     }
   };
 
@@ -74,7 +96,7 @@ const NotificationBell = () => {
                   className={`p-4 hover:bg-muted/50 transition-colors cursor-pointer ${
                     !notification.is_read ? 'bg-primary/5' : ''
                   }`}
-                  onClick={() => !notification.is_read && markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5">
