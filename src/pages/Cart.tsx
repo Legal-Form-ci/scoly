@@ -3,6 +3,7 @@ import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SmartImage from "@/components/SmartImage";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -98,17 +99,12 @@ const Cart = () => {
                   >
                     {/* Image */}
                     <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                      {item.product?.image_url ? (
-                        <img
-                          src={item.product.image_url}
-                          alt={getLocalizedName(item.product)}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ShoppingBag size={24} className="text-muted-foreground" />
-                        </div>
-                      )}
+                      <SmartImage
+                        src={item.product?.image_url}
+                        alt={getLocalizedName(item.product)}
+                        className="w-full h-full object-cover"
+                        fallbackSrc="/placeholder.svg"
+                      />
                     </div>
 
                     {/* Details */}

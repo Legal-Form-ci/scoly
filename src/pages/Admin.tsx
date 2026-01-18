@@ -54,6 +54,7 @@ import FAQManagement from "@/components/admin/FAQManagement";
 import PlatformSettings from "@/components/admin/PlatformSettings";
 import AdvancedStats from "@/components/admin/AdvancedStats";
 import BackupSettings from "@/components/admin/BackupSettings";
+import PaymentsTab from "@/components/admin/PaymentsTab";
 
 type TabType =
   | "dashboard"
@@ -75,7 +76,8 @@ type TabType =
   | "commissions"
   | "deliveries"
   | "loyalty"
-  | "backup";
+  | "backup"
+  | "payments";
 
 const Admin = () => {
   const { t, language } = useLanguage();
@@ -119,6 +121,7 @@ const Admin = () => {
     { id: "products", label: "Produits", icon: Package },
     { id: "categories", label: "Catégories", icon: FolderTree },
     { id: "orders", label: "Commandes", icon: ShoppingBag },
+    { id: "payments", label: "Paiements", icon: DollarSign },
     { id: "deliveries", label: "Livraisons", icon: Truck },
     { id: "users", label: "Utilisateurs", icon: Users },
     { id: "vendors", label: "Vendeurs", icon: Store },
@@ -222,6 +225,7 @@ const Admin = () => {
           {activeTab === "products" && <ProductsTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "orders" && <OrdersTab />}
+          {activeTab === "payments" && <PaymentsTab />}
           {activeTab === "deliveries" && <DeliveriesTab />}
           {activeTab === "users" && <UserManagement />}
           {activeTab === "vendors" && <VendorsTab />}

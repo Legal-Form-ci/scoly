@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PaymentStatusTracker from "@/components/PaymentStatusTracker";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useKkiaPay } from "@/hooks/useKkiaPay";
+import { usePaymentTracking } from "@/hooks/usePaymentTracking";
 
 // Regions of Côte d'Ivoire
 const regions = [
@@ -449,6 +451,24 @@ const Checkout = () => {
                   <p className="text-sm text-green-600 mt-1">Réduction appliquée: -{formatPrice(discountAmount)}</p>
                 )}
               </div>
+
+              {/* Real-time payment tracking */}
+              {orderId && (
+                <PaymentStatusTracker
+                  orderId={orderId}
+                  compact={true}
+                  onStatusChange={(status) => {
+                    if (status === 'completed') {
+                      clearCart();
+                      setStep('success');
+                      toast({
+                        title: t.checkout.orderSuccess,
+                        description: t.checkout.orderSuccessMessage,
+                      });
+                    }
+                  }}
+                />
+              )}
 
               {/* Payment info */}
               <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
