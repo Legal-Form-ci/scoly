@@ -81,7 +81,7 @@ type TabType =
 
 const Admin = () => {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -89,11 +89,14 @@ const Admin = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     checkAdminRole();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user]);
 
   const checkAdminRole = async () => {
     if (!user) {
+      setLoading(false);
       navigate("/auth");
       return;
     }
@@ -107,6 +110,7 @@ const Admin = () => {
 
     if (error || !data) {
       toast.error("Accès refusé. Vous n'êtes pas administrateur.");
+      setLoading(false);
       navigate("/");
       return;
     }

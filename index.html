@@ -65,6 +65,21 @@
   <meta name="twitter:title" content="Izy-scoly - Fournitures scolaires et bureautiques en Côte d&amp;#39;Ivoire">
   <meta property="og:description" content="Izy-scoly, votre référence en Côte d&#39;Ivoire pour les fournitures scolaires et bureautiques de qualité. Livraison gratuite sur toutes vos commandes. Primaire, Secondaire, Université, Bureautique et Librairie.">
   <meta name="twitter:description" content="Izy-scoly, votre référence en Côte d&#39;Ivoire pour les fournitures scolaires et bureautiques de qualité. Livraison gratuite sur toutes vos commandes. Primaire, Secondaire, Université, Bureautique et Librairie.">
+
+  <!-- SPA direct URL fallback (works with static hosts) -->
+  <script>
+    (function () {
+      const redirect = sessionStorage.getItem('redirect');
+      if (!redirect) return;
+      sessionStorage.removeItem('redirect');
+      try {
+        const url = new URL(redirect);
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+      } catch {
+        // no-op
+      }
+    })();
+  </script>
 </head>
   <body>
     <div id="root"></div>
