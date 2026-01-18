@@ -767,7 +767,7 @@ const ArticleDetail = () => {
         </div>
       </article>
 
-      {/* Floating Share Buttons with animation */}
+      {/* Floating Share Buttons with animation - Desktop */}
       <div 
         className={`fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-2 transition-all duration-300 ${
           showFloatingShare 
@@ -780,8 +780,23 @@ const ArticleDetail = () => {
           text={getExcerpt() || undefined}
           url={`https://izy-scoly.ci/actualites/${article.id}`}
           variant="icon-only"
+          articleId={article.id}
+          showCounts={true}
         />
       </div>
+
+      {/* Mobile Share Bar - Fixed at bottom */}
+      <SocialShare 
+        title={getTitle()} 
+        text={getExcerpt() || undefined}
+        url={`https://izy-scoly.ci/actualites/${article.id}`}
+        variant="mobile-bar"
+        articleId={article.id}
+        showCounts={true}
+      />
+
+      {/* Add padding for mobile bar */}
+      <div className="lg:hidden h-16" />
 
       <Footer />
     </main>
