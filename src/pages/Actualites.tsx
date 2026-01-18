@@ -190,50 +190,52 @@ const Actualites = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredArticles.map((article) => (
-                <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                  <CardHeader className="p-0">
-                    <div className="aspect-video bg-muted relative overflow-hidden">
-                      <SmartImage 
-                        src={article.cover_image} 
-                        alt={getTitle(article)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        fallbackSrc="/placeholder.svg"
-                      />
-                      {article.is_premium && (
-                        <Badge className="absolute top-4 right-4 bg-accent">Premium</Badge>
+                <Link key={article.id} to={`/actualites/${article.id}`}>
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow group h-full">
+                    <CardHeader className="p-0">
+                      <div className="aspect-video bg-muted relative overflow-hidden">
+                        <SmartImage 
+                          src={article.cover_image} 
+                          alt={getTitle(article)}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          fallbackSrc="/placeholder.svg"
+                        />
+                        {article.is_premium && (
+                          <Badge className="absolute top-4 right-4 bg-accent">Premium</Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <Badge variant="secondary" className="mb-3">
+                        {getCategoryLabel(article.category)}
+                      </Badge>
+                      <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                        {getTitle(article)}
+                      </h3>
+                      <p className="text-muted-foreground text-sm line-clamp-3">
+                        {getExcerpt(article) || "Découvrez cet article passionnant sur Izy-scoly..."}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0 flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Eye size={14} />
+                          {article.views}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Heart size={14} />
+                          {article.likes}
+                        </span>
+                      </div>
+                      {article.published_at && (
+                        <span className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          {new Date(article.published_at).toLocaleDateString('fr-FR')}
+                        </span>
                       )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <Badge variant="secondary" className="mb-3">
-                      {getCategoryLabel(article.category)}
-                    </Badge>
-                    <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                      {getTitle(article)}
-                    </h3>
-                    <p className="text-muted-foreground text-sm line-clamp-3">
-                      {getExcerpt(article) || "Découvrez cet article passionnant sur Izy-scoly..."}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="p-4 pt-0 flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1">
-                        <Eye size={14} />
-                        {article.views}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Heart size={14} />
-                        {article.likes}
-                      </span>
-                    </div>
-                    {article.published_at && (
-                      <span className="flex items-center gap-1">
-                        <Calendar size={14} />
-                        {new Date(article.published_at).toLocaleDateString('fr-FR')}
-                      </span>
-                    )}
-                  </CardFooter>
-                </Card>
+                    </CardFooter>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
