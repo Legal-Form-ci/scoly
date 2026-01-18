@@ -52,12 +52,12 @@ const SocialShare = ({ title, text, url, variant = "default" }: SocialShareProps
 
   if (variant === "icon-only") {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col items-center gap-2">
         <Button
           variant="outline"
           size="icon"
           onClick={() => handleShare('facebook')}
-          className="text-[#1877F2] hover:bg-[#1877F2]/10"
+          className="text-[#1877F2] hover:bg-[#1877F2]/10 bg-background shadow-md"
           title="Partager sur Facebook"
         >
           <Facebook size={18} />
@@ -66,7 +66,7 @@ const SocialShare = ({ title, text, url, variant = "default" }: SocialShareProps
           variant="outline"
           size="icon"
           onClick={() => handleShare('whatsapp')}
-          className="text-[#25D366] hover:bg-[#25D366]/10"
+          className="text-[#25D366] hover:bg-[#25D366]/10 bg-background shadow-md"
           title="Partager sur WhatsApp"
         >
           <MessageCircle size={18} />
@@ -75,7 +75,7 @@ const SocialShare = ({ title, text, url, variant = "default" }: SocialShareProps
           variant="outline"
           size="icon"
           onClick={() => handleShare('twitter')}
-          className="text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+          className="text-[#1DA1F2] hover:bg-[#1DA1F2]/10 bg-background shadow-md"
           title="Partager sur Twitter"
         >
           <Twitter size={18} />
@@ -84,6 +84,7 @@ const SocialShare = ({ title, text, url, variant = "default" }: SocialShareProps
           variant="outline"
           size="icon"
           onClick={handleCopyLink}
+          className="bg-background shadow-md"
           title="Copier le lien"
         >
           <LinkIcon size={18} />
