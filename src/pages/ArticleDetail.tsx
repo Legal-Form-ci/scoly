@@ -24,6 +24,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SmartImage from "@/components/SmartImage";
 import SEOHead from "@/components/SEOHead";
+import ArticleReactions from "@/components/ArticleReactions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -493,20 +494,17 @@ const ArticleDetail = () => {
             />
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between mb-8 pb-6 border-b">
-            <div className="flex items-center gap-4">
-              <Button
-                variant={hasLiked ? "default" : "outline"}
-                size="sm"
-                onClick={handleLike}
-              >
-                <Heart size={16} className={hasLiked ? "fill-current" : ""} />
-                {article.likes}
-              </Button>
+          {/* Reactions */}
+          <div className="flex items-center justify-between mb-8 pb-6 border-b flex-wrap gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <ArticleReactions articleId={article.id} />
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Eye size={14} />
                 {article.views} vues
+              </span>
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <MessageCircle size={14} />
+                {comments.length} commentaires
               </span>
             </div>
             <Button variant="outline" size="sm" onClick={handleShare}>
