@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, ShoppingCart, User, LogOut, ChevronDown, Search } from "lucide-react";
+import { Menu, X, ShoppingCart, User, LogOut, Search, Truck, Store, Shield, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -15,7 +14,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const { t } = useLanguage();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, roles, getDashboardPath } = useAuth();
   const { itemCount: cartCount } = useCart();
   const navigate = useNavigate();
 
@@ -26,10 +25,20 @@ const Navbar = () => {
     { label: t.nav.contact, href: "/contact" },
   ];
 
+  // Détermine les liens selon les rôles
+  const isVendor = roles.includes('vendor');
+  const isModerator = roles.includes('moderator');
+  const isDelivery = roles.includes('delivery');
+
   const handleLogout = async () => {
     await signOut();
     navigate("/");
   };
+
+  // Redirection auto post-connexion vers le bon tableau de bord
+  useEffect(() => {
+    // Cette logique est gérée dans Auth.tsx, ici c'est juste pour afficher les bons liens
+  }, [roles]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -88,10 +97,36 @@ const Navbar = () => {
               <>
                 <NotificationBell />
                 <div className="hidden sm:flex items-center gap-2">
+                  {/* Liens selon les rôles */}
                   {isAdmin && (
                     <Link to="/admin">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <Shield size={16} />
                         Admin
+                      </Button>
+                    </Link>
+                  )}
+                  {isVendor && !isAdmin && (
+                    <Link to="/vendor">
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <Store size={16} />
+                        Vendeur
+                      </Button>
+                    </Link>
+                  )}
+                  {isModerator && !isAdmin && (
+                    <Link to="/moderator">
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <Shield size={16} />
+                        Modérateur
+                      </Button>
+                    </Link>
+                  )}
+                  {isDelivery && !isAdmin && (
+                    <Link to="/delivery">
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <Truck size={16} />
+                        Livreur
                       </Button>
                     </Link>
                   )}
@@ -157,18 +192,50 @@ const Navbar = () => {
                 <>
                   <Link
                     to="/account"
-                    className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors"
+                    className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
                     onClick={() => setIsOpen(false)}
                   >
+                    <User size={18} />
                     {t.nav.myAccount}
                   </Link>
                   {isAdmin && (
                     <Link
                       to="/admin"
-                      className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors"
+                      className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
                       onClick={() => setIsOpen(false)}
                     >
+                      <Shield size={18} />
                       Administration
+                    </Link>
+                  )}
+                  {isVendor && !isAdmin && (
+                    <Link
+                      to="/vendor"
+                      className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Store size={18} />
+                      Espace Vendeur
+                    </Link>
+                  )}
+                  {isModerator && !isAdmin && (
+                    <Link
+                      to="/moderator"
+                      className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Shield size={18} />
+                      Espace Modérateur
+                    </Link>
+                  )}
+                  {isDelivery && !isAdmin && (
+                    <Link
+                      to="/delivery"
+                      className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Truck size={18} />
+                      Espace Livreur
                     </Link>
                   )}
                   <button
@@ -176,8 +243,9 @@ const Navbar = () => {
                       handleLogout();
                       setIsOpen(false);
                     }}
-                    className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors text-left"
+                    className="px-4 py-3 text-foreground hover:bg-muted rounded-lg transition-colors text-left flex items-center gap-2"
                   >
+                    <LogOut size={18} />
                     {t.nav.logout}
                   </button>
                 </>

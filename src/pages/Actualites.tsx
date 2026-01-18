@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SmartImage from "@/components/SmartImage";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -106,7 +106,7 @@ const Actualites = () => {
     <main className="min-h-screen bg-background">
       <Navbar />
       
-      {/* Hero Section */}
+      {/* Hero Section - Fond solide */}
       <section className="pt-24 pb-12 bg-primary">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center text-primary-foreground">
@@ -193,17 +193,12 @@ const Actualites = () => {
                 <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                   <CardHeader className="p-0">
                     <div className="aspect-video bg-muted relative overflow-hidden">
-                      {article.cover_image ? (
-                        <img 
-                          src={article.cover_image} 
-                          alt={getTitle(article)}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <BookOpen className="text-primary-foreground/30" size={64} />
-                        </div>
-                      )}
+                      <SmartImage 
+                        src={article.cover_image} 
+                        alt={getTitle(article)}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fallbackSrc="/placeholder.svg"
+                      />
                       {article.is_premium && (
                         <Badge className="absolute top-4 right-4 bg-accent">Premium</Badge>
                       )}
@@ -245,7 +240,7 @@ const Actualites = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section - Fond solide */}
       <section className="py-16 bg-muted">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">

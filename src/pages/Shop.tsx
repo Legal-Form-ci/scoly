@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SmartImage from "@/components/SmartImage";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +61,6 @@ const Shop = () => {
   useEffect(() => {
     const categoryParam = searchParams.get("category");
     if (categoryParam) {
-      // Find category by slug
       const cat = categories.find(c => c.slug === categoryParam);
       if (cat) {
         setSelectedCategory(cat.id);
@@ -140,7 +140,7 @@ const Shop = () => {
     <main className="min-h-screen bg-background">
       <Navbar />
       
-      {/* Hero Section */}
+      {/* Hero Section - Fond solide sans dégradé */}
       <section className="pt-24 pb-12 bg-primary">
         <div className="container mx-auto px-4">
           <div className="text-center text-primary-foreground">
@@ -158,7 +158,7 @@ const Shop = () => {
         </div>
       </section>
 
-      {/* Scoly Categories Banner */}
+      {/* Categories Banner */}
       <section className="py-6 bg-muted/50 border-b border-border">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -293,20 +293,14 @@ const Shop = () => {
                       key={product.id}
                       className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all flex flex-col"
                     >
-                      {/* Image */}
+                      {/* Image avec SmartImage */}
                       <Link to={`/shop/product/${product.id}`} className="relative aspect-square block overflow-hidden">
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url}
-                            alt={getLocalizedName(product)}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-muted flex items-center justify-center">
-                            <ShoppingCart size={32} className="text-muted-foreground" />
-                          </div>
-                        )}
+                        <SmartImage
+                          src={product.image_url}
+                          alt={getLocalizedName(product)}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          fallbackSrc="/placeholder.svg"
+                        />
                         
                         {/* Badges */}
                         <div className="absolute top-2 left-2 flex flex-col gap-1">
