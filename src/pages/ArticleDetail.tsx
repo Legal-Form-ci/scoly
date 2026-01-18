@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SmartImage from "@/components/SmartImage";
+import SEOHead from "@/components/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -391,6 +392,16 @@ const ArticleDetail = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      <SEOHead 
+        title={getTitle()}
+        description={getExcerpt() || `Découvrez cet article sur Izy-scoly`}
+        url={`https://izy-scoly.ci/actualites/${article.id}`}
+        image={article.cover_image || undefined}
+        type="article"
+        author={author ? `${author.first_name} ${author.last_name}` : undefined}
+        publishedTime={article.published_at || undefined}
+        keywords={["article", getCategoryLabel(article.category), "éducation", "Côte d'Ivoire"]}
+      />
       <Navbar />
       
       <article className="pt-24 pb-12">

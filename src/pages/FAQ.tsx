@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -147,6 +148,12 @@ const FAQ = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      <SEOHead 
+        title="FAQ - Questions fréquentes"
+        description="Trouvez les réponses à vos questions sur les commandes, livraisons, paiements et retours sur Izy-scoly."
+        url="https://izy-scoly.ci/faq"
+        keywords={["FAQ", "questions", "aide", "support", "Izy-scoly"]}
+      />
       <Navbar />
       
       {/* Hero Section */}

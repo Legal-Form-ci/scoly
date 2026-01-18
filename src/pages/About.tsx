@@ -2,6 +2,7 @@ import { Users, Target, Eye, Heart, Award, Globe } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SmartImage from "@/components/SmartImage";
+import SEOHead from "@/components/SEOHead";
 import { useLanguage } from "@/i18n/LanguageContext";
 import founderImage from "@/assets/founder-kablan.jpg";
 
@@ -24,6 +25,12 @@ const About = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      <SEOHead 
+        title="À propos - Notre équipe et notre mission"
+        description="Découvrez Izy-scoly, votre partenaire pour l'éducation en Côte d'Ivoire. Notre mission : rendre les fournitures scolaires accessibles à tous."
+        url="https://izy-scoly.ci/about"
+        keywords={["à propos", "équipe", "mission", "Izy-scoly", "Côte d'Ivoire", "éducation"]}
+      />
       <Navbar />
       
       {/* Hero Section */}

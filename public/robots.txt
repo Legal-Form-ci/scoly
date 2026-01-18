@@ -1,4 +1,25 @@
+# Robots.txt for Izy-scoly
+# https://izy-scoly.ci
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private pages
+Disallow: /admin
+Disallow: /account
+Disallow: /checkout
+Disallow: /vendor
+Disallow: /moderator
+Disallow: /delivery
+Disallow: /author
+Disallow: /team
+Disallow: /bootstrap-admin
+
+# Allow all search engine crawlers
 User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
 Allow: /
 
 User-agent: Bingbot
@@ -10,5 +31,11 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
+User-agent: LinkedInBot
 Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# Sitemap location
+Sitemap: https://izy-scoly.ci/sitemap.xml
