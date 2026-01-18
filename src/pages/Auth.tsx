@@ -28,11 +28,35 @@ const Auth = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
+  const redirectToDashboard = async () => {
+    const { data: { user: u } } = await supabase.auth.getUser();
+    if (!u) return;
+
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', u.id);
+
+    const roleList = (roles || []).map((r) => r.role);
+    const path = roleList.includes('admin')
+      ? '/admin'
+      : roleList.includes('moderator')
+        ? '/moderator'
+        : roleList.includes('vendor')
+          ? '/vendor'
+          : roleList.includes('delivery')
+            ? '/delivery'
+            : '/account';
+
+    navigate(path);
+  };
+
   useEffect(() => {
     if (user) {
-      navigate("/");
+      redirectToDashboard();
     }
-  }, [user, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Enhanced password validation rules
   const passwordRules = {
@@ -184,18 +208,18 @@ const Auth = () => {
           }
         }
 
-        const { error } = await signIn(loginEmail, password);
-        if (!error) {
-          // Update profile with email on successful login
-          const { data: { user: loggedUser } } = await supabase.auth.getUser();
-          if (loggedUser?.email) {
-            await supabase
-              .from('profiles')
-              .update({ email: loggedUser.email })
-              .eq('id', loggedUser.id);
-          }
-          navigate("/");
-        }
+         const { error } = await signIn(loginEmail, password);
+         if (!error) {
+           // Update profile with email on successful login
+           const { data: { user: loggedUser } } = await supabase.auth.getUser();
+           if (loggedUser?.email) {
+             await supabase
+               .from('profiles')
+               .update({ email: loggedUser.email })
+               .eq('id', loggedUser.id);
+           }
+           await redirectToDashboard();
+         }
       } else {
         const result = signupSchema.safeParse({
           email,
@@ -217,20 +241,20 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await signUp(email, password, firstName, lastName);
-        if (!error) {
-          // Update username if provided
-          if (username) {
-            const { data: { user: newUser } } = await supabase.auth.getUser();
-            if (newUser) {
-              await supabase
-                .from('profiles')
-                .update({ username })
-                .eq('id', newUser.id);
-            }
-          }
-          navigate("/");
-        }
+         const { error } = await signUp(email, password, firstName, lastName);
+         if (!error) {
+           // Update username if provided
+           if (username) {
+             const { data: { user: newUser } } = await supabase.auth.getUser();
+             if (newUser) {
+               await supabase
+                 .from('profiles')
+                 .update({ username })
+                 .eq('id', newUser.id);
+             }
+           }
+           await redirectToDashboard();
+         }
       }
     } finally {
       setLoading(false);

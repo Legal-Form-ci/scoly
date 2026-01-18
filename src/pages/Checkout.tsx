@@ -60,7 +60,12 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { openPaymentWidget, loading: paymentLoading, isScriptLoaded } = useKkiaPay();
+  const {
+    openPaymentWidget,
+    loading: paymentLoading,
+    isScriptLoaded,
+    checkPaymentStatus,
+  } = useKkiaPay();
 
   const [step, setStep] = useState<CheckoutStep>('form');
   const [loading, setLoading] = useState(false);
@@ -96,14 +101,61 @@ const Checkout = () => {
 
   // Check for payment success from URL
   useEffect(() => {
-    if (searchParams.get('payment') === 'success') {
-      clearCart();
-      setStep('success');
-      toast({
-        title: t.checkout.orderSuccess,
-        description: t.checkout.orderSuccessMessage,
-      });
-    }
+    const isSuccess = searchParams.get('payment') === 'success';
+    if (!isSuccess) return;
+
+    const paymentIdFromUrl = searchParams.get('paymentId');
+    const orderIdFromUrl = searchParams.get('orderId');
+
+    const run = async () => {
+      try {
+        // Prefer URL, fallback to localStorage
+        let paymentId = paymentIdFromUrl;
+        let callbackOrderId = orderIdFromUrl;
+
+        if (!paymentId || !callbackOrderId) {
+          try {
+            const raw = localStorage.getItem('kkiapay_pending');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              paymentId = paymentId || parsed.paymentId;
+              callbackOrderId = callbackOrderId || parsed.orderId;
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        // Best-effort: wait for status to be completed
+        if (paymentId) {
+          for (let i = 0; i < 6; i++) {
+            const status = await checkPaymentStatus(paymentId);
+            if (status?.status === 'completed') break;
+            await new Promise((r) => setTimeout(r, 1500));
+          }
+        }
+
+        await clearCart();
+        setStep('success');
+        toast({
+          title: t.checkout.orderSuccess,
+          description: t.checkout.orderSuccessMessage,
+        });
+
+        // Cleanup
+        try {
+          localStorage.removeItem('kkiapay_pending');
+        } catch {
+          // ignore
+        }
+      } catch (e) {
+        console.error('Payment callback handling error:', e);
+        setStep('success');
+      }
+    };
+
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Load user profile data

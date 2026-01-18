@@ -291,48 +291,41 @@ const DatabaseManagement = () => {
     try {
       const text = await file.text();
       let data: any;
-      
+
       try {
         const parsed = JSON.parse(text);
         data = parsed.data || parsed; // Support both formats
-      } catch (e) {
+      } catch {
         toast.error('Format de fichier invalide. Utilisez un fichier JSON exporté.');
         setRestoring(false);
         event.target.value = '';
         return;
       }
 
-      const tables = Object.keys(data).filter(key => ALL_TABLES.includes(key));
-      let imported = 0;
-      let total = 0;
-      
-      // Count total records
-      for (const tableName of tables) {
-        if (Array.isArray(data[tableName])) {
-          total += data[tableName].length;
-        }
+      const tablesToRestore = Object.keys(data).filter((key) => ALL_TABLES.includes(key));
+      if (tablesToRestore.length === 0) {
+        toast.error('Aucune table reconnue dans le fichier.');
+        setRestoring(false);
+        event.target.value = '';
+        return;
       }
 
-      for (const tableName of tables) {
-        const tableData = data[tableName];
-        if (!Array.isArray(tableData)) continue;
+      // Backend restore (service role) => remplace réellement les données côté cloud
+      const { data: result, error } = await supabase.functions.invoke('restore-database', {
+        body: { data, tables: tablesToRestore },
+      });
 
-        // Delete existing data first
-        await supabase.from(tableName as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
-        // Insert new data
-        for (const row of tableData) {
-          try {
-            const { error } = await supabase.from(tableName as any).upsert(row);
-            if (!error) imported++;
-          } catch (e) {
-            console.error(`Error restoring ${tableName}:`, e);
-          }
-          setRestoreProgress(Math.round((imported / total) * 100));
-        }
+      if (error || !result?.success) {
+        console.error('Restore error:', error || result);
+        toast.error('Erreur lors de la restauration');
+        setRestoring(false);
+        setRestoreProgress(0);
+        event.target.value = '';
+        return;
       }
 
-      toast.success(`Restauration terminée: ${imported}/${total} enregistrements restaurés`);
+      setRestoreProgress(100);
+      toast.success(`Restauration terminée: ${result.imported}/${result.total} enregistrements restaurés`);
       fetchTableStats();
     } catch (error) {
       console.error('Restore error:', error);

@@ -284,19 +284,35 @@ const UserManagement = () => {
       }
 
       // Update roles - delete existing and insert new
-      await supabase.from("user_roles").delete().eq("user_id", editingUser.id);
-      
+      const { error: deleteError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", editingUser.id);
+
+      if (deleteError) {
+        toast.error(t.error);
+        return;
+      }
+
       if (formData.roles.length > 0) {
-        // Filter to only valid DB roles (exclude 'delivery' if not in DB yet)
-        const validDbRoles = formData.roles.filter(role => 
-          ['admin', 'moderator', 'user', 'vendor', 'delivery'].includes(role)
+        const validDbRoles = formData.roles.filter((role) =>
+          ["admin", "moderator", "user", "vendor", "delivery"].includes(role)
         );
-        const roleInserts = validDbRoles.map(role => ({
+
+        const roleInserts = validDbRoles.map((role) => ({
           user_id: editingUser.id,
-          role: role as 'admin' | 'moderator' | 'user' | 'vendor'
+          role: role as "admin" | "moderator" | "user" | "vendor" | "delivery",
         }));
+
         if (roleInserts.length > 0) {
-          await supabase.from("user_roles").insert(roleInserts as any);
+          const { error: insertError } = await supabase
+            .from("user_roles")
+            .insert(roleInserts as any);
+
+          if (insertError) {
+            toast.error(t.error);
+            return;
+          }
         }
       }
 
