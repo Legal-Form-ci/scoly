@@ -61,110 +61,136 @@ export const useKkiaPay = () => {
     };
   }, []);
 
-  const openPaymentWidget = useCallback(async (
-    config: KkiaPayConfig,
-    orderId: string,
-    userId: string,
-    onSuccess?: (transactionId: string) => void,
-    onFailed?: () => void
-  ) => {
-    if (!isScriptLoaded || !window.openKkiapayWidget) {
-      console.error('KkiaPay SDK not loaded');
-      return;
-    }
+  const openPaymentWidget = useCallback(
+    async (
+      config: KkiaPayConfig,
+      orderId: string,
+      userId: string,
+      onSuccess?: (transactionId: string) => void,
+      onFailed?: () => void
+    ) => {
+      if (!isScriptLoaded || !window.openKkiapayWidget) {
+        console.error('KkiaPay SDK not loaded');
+        return;
+      }
 
-    setLoading(true);
-    setPaymentStatus('processing');
+      setLoading(true);
+      setPaymentStatus('processing');
 
-    // Create payment record first
-    const { data: payment, error } = await supabase
-      .from('payments')
-      .insert({
-        user_id: userId,
-        order_id: orderId,
-        amount: config.amount,
-        payment_method: 'kkiapay',
-        status: 'pending',
-        metadata: {
-          reason: config.reason,
-          customer_name: config.name,
-          customer_email: config.email,
-          customer_phone: config.phone
-        }
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating payment:', error);
-      setLoading(false);
-      setPaymentStatus('failed');
-      return;
-    }
-
-    // Success listener
-    const handleSuccess = async (response: { transactionId: string }) => {
-      console.log('KkiaPay success:', response);
-      setTransactionId(response.transactionId);
-      setPaymentStatus('completed');
-      setLoading(false);
-
-      // Update payment record
-      await supabase
+      // Create payment record first
+      const { data: payment, error } = await supabase
         .from('payments')
-        .update({
-          status: 'completed',
-          transaction_id: response.transactionId,
-          completed_at: new Date().toISOString()
+        .insert({
+          user_id: userId,
+          order_id: orderId,
+          amount: config.amount,
+          payment_method: 'kkiapay',
+          status: 'pending',
+          metadata: {
+            reason: config.reason,
+            customer_name: config.name,
+            customer_email: config.email,
+            customer_phone: config.phone,
+          },
         })
-        .eq('id', payment.id);
+        .select()
+        .single();
 
-      // Update order status
-      await supabase
-        .from('orders')
-        .update({ status: 'confirmed', payment_reference: response.transactionId })
-        .eq('id', orderId);
+      if (error) {
+        console.error('Error creating payment:', error);
+        setLoading(false);
+        setPaymentStatus('failed');
+        return;
+      }
 
-      onSuccess?.(response.transactionId);
-      window.removeKkiapayListener?.('success', handleSuccess);
-      window.removeKkiapayListener?.('failed', handleFailed);
-    };
+      // Persist minimal context for callback reloads
+      try {
+        localStorage.setItem(
+          'kkiapay_pending',
+          JSON.stringify({ paymentId: payment.id, orderId, userId, at: Date.now() })
+        );
+      } catch {
+        // ignore
+      }
 
-    // Failed listener
-    const handleFailed = async (error: any) => {
-      console.log('KkiaPay failed:', error);
-      setPaymentStatus('failed');
-      setLoading(false);
+      // Success listener
+      const handleSuccess = async (response: { transactionId: string }) => {
+        console.log('KkiaPay success:', response);
+        setTransactionId(response.transactionId);
+        setPaymentStatus('completed');
+        setLoading(false);
 
-      await supabase
-        .from('payments')
-        .update({ status: 'failed' })
-        .eq('id', payment.id);
+        // Update payment record
+        await supabase
+          .from('payments')
+          .update({
+            status: 'completed',
+            transaction_id: response.transactionId,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', payment.id);
 
-      onFailed?.();
-      window.removeKkiapayListener?.('success', handleSuccess);
-      window.removeKkiapayListener?.('failed', handleFailed);
-    };
+        // Update order status
+        await supabase
+          .from('orders')
+          .update({ status: 'confirmed', payment_reference: response.transactionId })
+          .eq('id', orderId);
 
-    // Add listeners
-    window.addKkiapayListener?.('success', handleSuccess);
-    window.addKkiapayListener?.('failed', handleFailed);
+        try {
+          localStorage.removeItem('kkiapay_pending');
+        } catch {
+          // ignore
+        }
 
-    // Open widget with public key - PRODUCTION MODE
-    const publicKey = '193bbb7e7387d1c3ac16ced9d47fe52fad2b228e';
-    
-    window.openKkiapayWidget({
-      amount: config.amount,
-      key: publicKey,
-      sandbox: false, // Production mode - real payments
-      data: JSON.stringify({
-        orderId,
-        paymentId: payment.id,
-        userId
-      }),
-      callback: window.location.origin + '/checkout?payment=success'
-    });
-  }, [isScriptLoaded]);
+        onSuccess?.(response.transactionId);
+        window.removeKkiapayListener?.('success', handleSuccess);
+        window.removeKkiapayListener?.('failed', handleFailed);
+      };
+
+      // Failed listener
+      const handleFailed = async (error: any) => {
+        console.log('KkiaPay failed:', error);
+        setPaymentStatus('failed');
+        setLoading(false);
+
+        await supabase.from('payments').update({ status: 'failed' }).eq('id', payment.id);
+
+        try {
+          localStorage.removeItem('kkiapay_pending');
+        } catch {
+          // ignore
+        }
+
+        onFailed?.();
+        window.removeKkiapayListener?.('success', handleSuccess);
+        window.removeKkiapayListener?.('failed', handleFailed);
+      };
+
+      // Add listeners
+      window.addKkiapayListener?.('success', handleSuccess);
+      window.addKkiapayListener?.('failed', handleFailed);
+
+      // Open widget with public key - PRODUCTION MODE
+      const publicKey = '193bbb7e7387d1c3ac16ced9d47fe52fad2b228e';
+
+      const callbackUrl =
+        window.location.origin +
+        `/checkout?payment=success&paymentId=${encodeURIComponent(payment.id)}&orderId=${encodeURIComponent(orderId)}`;
+
+      window.openKkiapayWidget({
+        amount: config.amount,
+        key: publicKey,
+        sandbox: false, // Production mode - real payments
+        data: JSON.stringify({
+          orderId,
+          paymentId: payment.id,
+          userId,
+        }),
+        callback: callbackUrl,
+      });
+    },
+    [isScriptLoaded]
+  );
 
   const checkPaymentStatus = useCallback(async (
     paymentId?: string,

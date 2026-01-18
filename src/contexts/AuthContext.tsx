@@ -7,8 +7,16 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  roles: Array<'admin' | 'moderator' | 'user' | 'vendor' | 'delivery'>;
   isAdmin: boolean;
-  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: Error | null }>;
+  refreshRoles: () => Promise<void>;
+  getDashboardPath: () => string;
+  signUp: (
+    email: string,
+    password: string,
+    firstName?: string,
+    lastName?: string
+  ) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -23,50 +31,112 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [roles, setRoles] = useState<Array<'admin' | 'moderator' | 'user' | 'vendor' | 'delivery'>>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
-  const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    
-    setIsAdmin(!!data);
+  const fetchRoles = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching roles:', error);
+      setRoles([]);
+      setIsAdmin(false);
+      return;
+    }
+
+    const nextRoles = (data || []).map((r) => r.role as any);
+    setRoles(nextRoles);
+    setIsAdmin(nextRoles.includes('admin'));
+  };
+
+  const refreshRoles = async () => {
+    if (!user?.id) return;
+    await fetchRoles(user.id);
+  };
+
+  const getDashboardPath = () => {
+    if (roles.includes('admin')) return '/admin';
+    if (roles.includes('moderator')) return '/moderator';
+    if (roles.includes('vendor')) return '/vendor';
+    if (roles.includes('delivery')) return '/delivery';
+    return '/account';
   };
 
   useEffect(() => {
+    let rolesChannel: ReturnType<typeof supabase.channel> | null = null;
+
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            checkAdminRole(session.user.id);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+
+      // Reset previous subscription
+      if (rolesChannel) {
+        supabase.removeChannel(rolesChannel);
+        rolesChannel = null;
       }
-    );
+
+      if (session?.user) {
+        // Load roles immediately
+        setTimeout(() => {
+          fetchRoles(session.user.id);
+        }, 0);
+
+        // Realtime: keep roles in sync when admin changes them
+        rolesChannel = supabase
+          .channel(`user-roles-${session.user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'user_roles',
+              filter: `user_id=eq.${session.user.id}`,
+            },
+            () => fetchRoles(session.user!.id)
+          )
+          .subscribe();
+      } else {
+        setRoles([]);
+        setIsAdmin(false);
+      }
+    });
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      
+
       if (session?.user) {
-        checkAdminRole(session.user.id);
+        fetchRoles(session.user.id);
+        rolesChannel = supabase
+          .channel(`user-roles-${session.user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'user_roles',
+              filter: `user_id=eq.${session.user.id}`,
+            },
+            () => fetchRoles(session.user!.id)
+          )
+          .subscribe();
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (rolesChannel) supabase.removeChannel(rolesChannel);
+    };
   }, []);
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
@@ -141,7 +211,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        roles,
+        isAdmin,
+        refreshRoles,
+        getDashboardPath,
+        signUp,
+        signIn,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
