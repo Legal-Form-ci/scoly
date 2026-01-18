@@ -1,6 +1,7 @@
 import { Users, Target, Eye, Heart, Award, Globe } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SmartImage from "@/components/SmartImage";
 import { useLanguage } from "@/i18n/LanguageContext";
 import founderImage from "@/assets/founder-kablan.jpg";
 
@@ -109,13 +110,14 @@ const About = () => {
               >
                 <div className="aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden">
                   {member.image ? (
-                    <img 
+                    <SmartImage 
                       src={member.image} 
                       alt={member.name}
                       className="w-full h-full object-cover object-top"
+                      fallbackSrc="/placeholder.svg"
                     />
                   ) : (
-                    <Users size={64} className="text-primary-foreground/30" />
+                    <Users size={64} className="text-muted-foreground" />
                   )}
                 </div>
                 <div className="p-4 text-center">

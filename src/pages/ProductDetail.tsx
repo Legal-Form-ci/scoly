@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SmartImage from "@/components/SmartImage";
 
 interface Product {
   id: string;
@@ -233,10 +234,11 @@ const ProductDetail = () => {
             {/* Image Gallery */}
             <div className="space-y-4">
               <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden">
-                <img
+                <SmartImage
                   src={allImages[selectedImage]}
                   alt={getLocalizedName(product)}
                   className="w-full h-full object-cover"
+                  fallbackSrc="/placeholder.svg"
                 />
                 {allImages.length > 1 && (
                   <>
@@ -271,7 +273,7 @@ const ProductDetail = () => {
                         selectedImage === index ? "border-primary" : "border-transparent"
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <SmartImage src={img} alt="" className="w-full h-full object-cover" fallbackSrc="/placeholder.svg" />
                     </button>
                   ))}
                 </div>
@@ -495,10 +497,11 @@ const ProductDetail = () => {
                     className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all"
                   >
                     <div className="aspect-square bg-muted overflow-hidden">
-                      <img
-                        src={relProduct.image_url || "/placeholder.svg"}
+                      <SmartImage
+                        src={relProduct.image_url}
                         alt={getLocalizedName(relProduct)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fallbackSrc="/placeholder.svg"
                       />
                     </div>
                     <div className="p-4">

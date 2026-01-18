@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, ShoppingBag, Settings, LogOut, Package, CheckCircle, Truck, Bell, Clock, MapPin, Heart, Gift, Plus, Edit, Trash2 } from "lucide-react";
+import { User, ShoppingBag, Settings, LogOut, Package, CheckCircle, Truck, Bell, Clock, MapPin, Heart, Gift, Plus, Edit, Trash2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PaymentStatusTracker from "@/components/PaymentStatusTracker";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -436,6 +437,10 @@ const Account = () => {
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings size={18} />
                 <span className="hidden sm:inline">{t.account.settings}</span>
+              </TabsTrigger>
+              <TabsTrigger value="payments" className="flex items-center gap-2">
+                <CreditCard size={18} />
+                <span className="hidden sm:inline">Paiements</span>
               </TabsTrigger>
             </TabsList>
 
@@ -871,6 +876,27 @@ const Account = () => {
                       Supprimer mon compte
                     </Button>
                   </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Payments Tab */}
+            <TabsContent value="payments">
+              <div className="bg-card rounded-xl border border-border p-4 sm:p-6">
+                <h2 className="text-xl font-display font-bold text-foreground mb-6">
+                  Historique des paiements
+                </h2>
+                
+                <PaymentStatusTracker
+                  userId={user?.id}
+                  showLogs={false}
+                />
+
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    Consultez l'historique de vos paiements et suivez leur statut en temps réel.
+                    Les paiements sont automatiquement mis à jour.
+                  </p>
                 </div>
               </div>
             </TabsContent>
