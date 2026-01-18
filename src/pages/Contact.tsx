@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEOHead";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -87,6 +88,12 @@ const Contact = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      <SEOHead 
+        title="Contact - Nous contacter"
+        description="Contactez l'équipe Izy-scoly pour toute question sur vos commandes, livraisons ou partenariats. Service client disponible 7j/7."
+        url="https://izy-scoly.ci/contact"
+        keywords={["contact", "service client", "support", "Izy-scoly"]}
+      />
       <Navbar />
       
       {/* Hero Section */}

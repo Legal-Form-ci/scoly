@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SmartImage from "@/components/SmartImage";
+import SEOHead from "@/components/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -104,6 +105,13 @@ const Actualites = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      <SEOHead 
+        title="Actualités - Articles et publications éducatives"
+        description="Découvrez nos articles, guides pratiques et conseils pour réussir à l'école et au bureau. Actualités éducatives en Côte d'Ivoire."
+        url="https://izy-scoly.ci/actualites"
+        type="website"
+        keywords={["actualités", "éducation", "articles", "guides", "Côte d'Ivoire", "école"]}
+      />
       <Navbar />
       
       {/* Hero Section - Fond solide */}

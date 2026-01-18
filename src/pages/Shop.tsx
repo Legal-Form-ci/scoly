@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SmartImage from "@/components/SmartImage";
+import SEOHead from "@/components/SEOHead";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -138,6 +139,12 @@ const Shop = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      <SEOHead 
+        title="Boutique - Fournitures scolaires et bureautiques"
+        description="Découvrez notre catalogue complet de fournitures scolaires et bureautiques. Livres, cahiers, stylos, matériel de bureau. Livraison gratuite en Côte d'Ivoire."
+        url="https://izy-scoly.ci/shop"
+        keywords={["boutique", "fournitures scolaires", "bureautique", "acheter", "Côte d'Ivoire"]}
+      />
       <Navbar />
       
       {/* Hero Section - Fond solide sans dégradé */}
