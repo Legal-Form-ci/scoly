@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+const LOCAL_CART_KEY = 'izyscoly_guest_cart';
+
 interface CartItem {
   id: string;
   product_id: string;
@@ -18,6 +20,11 @@ interface CartItem {
     image_url: string | null;
     stock: number;
   };
+}
+
+interface GuestCartItem {
+  product_id: string;
+  quantity: number;
 }
 
 interface CartContextType {
@@ -44,9 +51,105 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Get guest cart from localStorage
+  const getGuestCart = (): GuestCartItem[] => {
+    try {
+      const saved = localStorage.getItem(LOCAL_CART_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  // Save guest cart to localStorage
+  const saveGuestCart = (cart: GuestCartItem[]) => {
+    localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(cart));
+  };
+
+  // Clear guest cart from localStorage
+  const clearGuestCart = () => {
+    localStorage.removeItem(LOCAL_CART_KEY);
+  };
+
+  // Fetch product details for guest cart items
+  const fetchGuestCartWithProducts = async () => {
+    const guestCart = getGuestCart();
+    if (guestCart.length === 0) {
+      setItems([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const productIds = guestCart.map(item => item.product_id);
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('id, name_fr, name_en, name_de, name_es, price, original_price, image_url, stock')
+        .in('id', productIds);
+
+      if (error) throw error;
+
+      const cartWithProducts: CartItem[] = guestCart.map((item, index) => ({
+        id: `guest_${index}_${item.product_id}`,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        product: products?.find(p => p.id === item.product_id)
+      })).filter(item => item.product);
+
+      setItems(cartWithProducts);
+    } catch (error) {
+      console.error('Error fetching guest cart products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Migrate guest cart to user cart after login
+  const migrateGuestCartToUser = async () => {
+    if (!user) return;
+    
+    const guestCart = getGuestCart();
+    if (guestCart.length === 0) return;
+
+    try {
+      for (const item of guestCart) {
+        // Check if product already in user's cart
+        const { data: existing } = await supabase
+          .from('cart_items')
+          .select('id, quantity')
+          .eq('user_id', user.id)
+          .eq('product_id', item.product_id)
+          .single();
+
+        if (existing) {
+          // Update quantity if exists
+          await supabase
+            .from('cart_items')
+            .update({ quantity: existing.quantity + item.quantity })
+            .eq('id', existing.id);
+        } else {
+          // Insert new item
+          await supabase
+            .from('cart_items')
+            .insert({
+              user_id: user.id,
+              product_id: item.product_id,
+              quantity: item.quantity
+            });
+        }
+      }
+      
+      // Clear guest cart after migration
+      clearGuestCart();
+    } catch (error) {
+      console.error('Error migrating guest cart:', error);
+    }
+  };
+
   const fetchCart = async () => {
     if (!user) {
-      setItems([]);
+      // Fetch guest cart
+      await fetchGuestCartWithProducts();
       return;
     }
 
@@ -90,15 +193,32 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchCart();
+    if (user) {
+      // Migrate guest cart then fetch user cart
+      migrateGuestCartToUser().then(() => fetchCart());
+    } else {
+      fetchCart();
+    }
   }, [user]);
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) {
+      // Add to guest cart (localStorage)
+      const guestCart = getGuestCart();
+      const existingIndex = guestCart.findIndex(item => item.product_id === productId);
+      
+      if (existingIndex >= 0) {
+        guestCart[existingIndex].quantity += quantity;
+      } else {
+        guestCart.push({ product_id: productId, quantity });
+      }
+      
+      saveGuestCart(guestCart);
+      await fetchGuestCartWithProducts();
+      
       toast({
-        title: "Connexion requise",
-        description: "Veuillez vous connecter pour ajouter au panier.",
-        variant: "destructive",
+        title: "Ajouté au panier",
+        description: "Le produit a été ajouté à votre panier.",
       });
       return;
     }
@@ -138,6 +258,22 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   const removeFromCart = async (itemId: string) => {
+    if (!user) {
+      // Remove from guest cart
+      const guestCart = getGuestCart();
+      // Find by product_id from the itemId (format: guest_{index}_{product_id})
+      const productId = itemId.split('_').slice(2).join('_');
+      const updatedCart = guestCart.filter(item => item.product_id !== productId);
+      saveGuestCart(updatedCart);
+      await fetchGuestCartWithProducts();
+      
+      toast({
+        title: "Produit retiré",
+        description: "Le produit a été retiré de votre panier.",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('cart_items')
@@ -163,6 +299,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       return;
     }
 
+    if (!user) {
+      // Update guest cart
+      const guestCart = getGuestCart();
+      const productId = itemId.split('_').slice(2).join('_');
+      const itemIndex = guestCart.findIndex(item => item.product_id === productId);
+      
+      if (itemIndex >= 0) {
+        guestCart[itemIndex].quantity = quantity;
+        saveGuestCart(guestCart);
+        await fetchGuestCartWithProducts();
+      }
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('cart_items')
@@ -182,7 +332,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   const clearCart = async () => {
-    if (!user) return;
+    if (!user) {
+      clearGuestCart();
+      setItems([]);
+      return;
+    }
 
     try {
       const { error } = await supabase
