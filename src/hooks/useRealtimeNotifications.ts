@@ -167,6 +167,12 @@ export const useRealtimeNotifications = () => {
     };
   }, [user, isAdmin, toast]);
 
+  // Get security notifications requiring confirmation
+  const securityNotifications = notifications.filter(n => {
+    const data = n.data as Record<string, unknown> | null;
+    return n.type === 'security' && data?.requires_confirmation === true && !n.is_read;
+  });
+
   return {
     notifications,
     unreadCount,
@@ -174,5 +180,6 @@ export const useRealtimeNotifications = () => {
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications,
+    securityNotifications,
   };
 };

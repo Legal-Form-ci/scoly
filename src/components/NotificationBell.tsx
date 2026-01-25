@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Bell, Check, CheckCheck, Package, CreditCard, Newspaper, Heart, MessageCircle, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, Check, CheckCheck, Package, CreditCard, Newspaper, Heart, MessageCircle, Shield, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -11,11 +11,20 @@ import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import LoginSecurityAlert from './LoginSecurityAlert';
 
 const NotificationBell = () => {
   const [open, setOpen] = useState(false);
+  const [securityAlert, setSecurityAlert] = useState<any>(null);
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useRealtimeNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, loading, securityNotifications } = useRealtimeNotifications();
+
+  // Show security alert if there are pending confirmations
+  useEffect(() => {
+    if (securityNotifications.length > 0 && !securityAlert) {
+      setSecurityAlert(securityNotifications[0]);
+    }
+  }, [securityNotifications, securityAlert]);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -29,6 +38,8 @@ const NotificationBell = () => {
         return <Heart size={16} className="text-pink-500" />;
       case 'comment':
         return <MessageCircle size={16} className="text-orange-500" />;
+      case 'security':
+        return <Shield size={16} className="text-red-500" />;
       default:
         return <Bell size={16} className="text-muted-foreground" />;
     }
@@ -51,7 +62,14 @@ const NotificationBell = () => {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <>
+      {securityAlert && (
+        <LoginSecurityAlert
+          notification={securityAlert}
+          onClose={() => setSecurityAlert(null)}
+        />
+      )}
+      <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell size={20} />
@@ -126,7 +144,8 @@ const NotificationBell = () => {
           )}
         </ScrollArea>
       </PopoverContent>
-    </Popover>
+      </Popover>
+    </>
   );
 };
 
