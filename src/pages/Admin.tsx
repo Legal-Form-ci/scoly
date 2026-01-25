@@ -53,7 +53,6 @@ import DatabaseManagement from "@/components/admin/DatabaseManagement";
 import FAQManagement from "@/components/admin/FAQManagement";
 import PlatformSettings from "@/components/admin/PlatformSettings";
 import AdvancedStats from "@/components/admin/AdvancedStats";
-import BackupSettings from "@/components/admin/BackupSettings";
 import PaymentsTab from "@/components/admin/PaymentsTab";
 import ShareStatsTab from "@/components/admin/ShareStatsTab";
 
@@ -80,7 +79,6 @@ type TabType =
   | "commissions"
   | "deliveries"
   | "loyalty"
-  | "backup"
   | "payments";
 
 const Admin = () => {
@@ -143,7 +141,6 @@ const Admin = () => {
     { id: "advertisements", label: "Publicités", icon: Bell },
     { id: "faq", label: "FAQ", icon: HelpCircle },
     { id: "database", label: "Base de données", icon: Database },
-    { id: "backup", label: "Sauvegardes", icon: Database },
     { id: "settings", label: "Paramètres", icon: Settings },
   ];
 
@@ -268,7 +265,6 @@ const Admin = () => {
           {activeTab === "advertisements" && <AdvertisementsManagement />}
           {activeTab === "faq" && <FAQManagement />}
           {activeTab === "database" && <DatabaseManagement />}
-          {activeTab === "backup" && <BackupSettings />}
           {activeTab === "settings" && <PlatformSettings />}
         </div>
       </div>
