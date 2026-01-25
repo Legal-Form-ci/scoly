@@ -31,6 +31,7 @@ import BootstrapAdmin from "./pages/BootstrapAdmin";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import VendorDashboard from "./pages/VendorDashboard";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
+import PushNotificationPrompt from "./components/PushNotificationPrompt";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +86,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <ScIA />
+                <PushNotificationPrompt />
               </BrowserRouter>
             </TooltipProvider>
           </CartProvider>
