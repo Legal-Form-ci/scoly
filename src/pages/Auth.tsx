@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, User, AtSign, AlertTriangle, CheckCircle, Chrome } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, AtSign, AlertTriangle, CheckCircle, Chrome, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import Logo from "@/components/Logo";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useRateLimit } from "@/hooks/useRateLimit";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,6 +31,10 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  
+  // Rate limiting for login/signup
+  const loginRateLimit = useRateLimit('auth_login', { maxAttempts: 5, windowSeconds: 300, blockSeconds: 900 });
+  const signupRateLimit = useRateLimit('auth_signup', { maxAttempts: 3, windowSeconds: 600, blockSeconds: 1800 });
 
   const redirectToDashboard = async () => {
     const { data: { user: u } } = await supabase.auth.getUser();
@@ -171,6 +177,19 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Check rate limit first
+      const rateLimit = isLogin ? loginRateLimit : signupRateLimit;
+      const rateLimitResult = await rateLimit.checkRateLimit();
+      
+      if (!rateLimitResult.allowed) {
+        const blockedMessage = rateLimitResult.blockedUntil 
+          ? `Trop de tentatives. Réessayez dans ${rateLimit.formatBlockedTime(rateLimitResult.blockedUntil)}.`
+          : "Trop de tentatives. Veuillez réessayer plus tard.";
+        toast.error(blockedMessage);
+        setLoading(false);
+        return;
+      }
+
       if (isLogin) {
         const result = loginSchema.safeParse({ identifier, password });
         if (!result.success) {
