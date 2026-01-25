@@ -4,7 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const POPUP_SESSION_KEY = "freeShippingPopupSession";
+const POPUP_STORAGE_KEY = "freeShippingPopupDate";
+
+// Check if popup should be shown (once per day, resets at midnight)
+const shouldShowPopup = (): boolean => {
+  const lastShown = localStorage.getItem(POPUP_STORAGE_KEY);
+  if (!lastShown) return true;
+  
+  const lastDate = new Date(lastShown);
+  const now = new Date();
+  
+  // Check if it's a new day (after midnight)
+  const isNewDay = 
+    now.getDate() !== lastDate.getDate() ||
+    now.getMonth() !== lastDate.getMonth() ||
+    now.getFullYear() !== lastDate.getFullYear();
+  
+  return isNewDay;
+};
 
 export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -14,9 +31,8 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
     // Only show on homepage
     if (location.pathname !== "/") return;
     
-    // Check if popup was already shown in this session
-    const sessionShown = sessionStorage.getItem(POPUP_SESSION_KEY);
-    if (sessionShown) return;
+    // Check if popup was already shown today
+    if (!shouldShowPopup()) return;
 
     // Show popup after 2 seconds
     const timer = setTimeout(() => {
@@ -28,8 +44,8 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
 
   const handleClose = () => {
     setIsVisible(false);
-    // Mark as shown for this session only
-    sessionStorage.setItem(POPUP_SESSION_KEY, "true");
+    // Mark as shown for today with current timestamp
+    localStorage.setItem(POPUP_STORAGE_KEY, new Date().toISOString());
   };
 
   return (

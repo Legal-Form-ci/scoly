@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { Mail, Phone, MapPin, Send, CheckCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Send, CheckCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { useRateLimit } from "@/hooks/useRateLimit";
 import { z } from "zod";
 
 const Contact = () => {
@@ -23,6 +25,9 @@ const Contact = () => {
     message: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Rate limiting for contact form
+  const contactRateLimit = useRateLimit('contact_form', { maxAttempts: 3, windowSeconds: 600, blockSeconds: 1800 });
 
   const contactSchema = z.object({
     name: z.string().min(2).max(100),
@@ -46,6 +51,21 @@ const Contact = () => {
       setErrors(fieldErrors);
       return;
     }
+
+    // Check rate limit
+    const rateLimitResult = await contactRateLimit.checkRateLimit();
+    if (!rateLimitResult.allowed) {
+      const blockedMessage = rateLimitResult.blockedUntil 
+        ? `Trop de soumissions. Réessayez dans ${contactRateLimit.formatBlockedTime(rateLimitResult.blockedUntil)}.`
+        : "Trop de soumissions. Veuillez réessayer plus tard.";
+      toast({
+        title: "Limite atteinte",
+        description: blockedMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
 
     setLoading(true);
 
