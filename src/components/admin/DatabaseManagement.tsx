@@ -10,6 +10,7 @@ import {
   Clock, 
   FileJson, 
   FileText,
+  FileSpreadsheet,
   HardDrive,
   AlertTriangle,
   CheckCircle2,
@@ -43,6 +44,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import BackupSettings from "./BackupSettings";
+import { exportToExcel } from "@/utils/excelExport";
 
 interface TableInfo {
   name: string;
@@ -102,7 +104,7 @@ const DatabaseManagement = () => {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<'csv' | 'json' | 'sql'>('json');
+  const [exportFormat, setExportFormat] = useState<'xlsx' | 'json' | 'sql'>('xlsx');
   const [previewData, setPreviewData] = useState<any>(null);
   const [previewTable, setPreviewTable] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -179,7 +181,7 @@ const DatabaseManagement = () => {
 
     setExporting(true);
     try {
-      const exportData: Record<string, any[]> = {};
+      const exportDataObj: Record<string, any[]> = {};
       const schema: Record<string, string[]> = {};
       const metadata = {
         exportedAt: new Date().toISOString(),
@@ -197,13 +199,21 @@ const DatabaseManagement = () => {
           .select('*');
         
         if (!error && data) {
-          exportData[tableName] = data;
+          exportDataObj[tableName] = data;
           metadata.totalRecords += data.length;
           // Capture column names for schema reference
           if (data.length > 0) {
             schema[tableName] = Object.keys(data[0]);
           }
         }
+      }
+
+      // Excel export using our professional export utility
+      if (exportFormat === 'xlsx') {
+        exportToExcel(exportDataObj, 'izy-scoly-backup');
+        toast.success(`Export Excel professionnel téléchargé (${metadata.totalRecords} enregistrements)`);
+        setExporting(false);
+        return;
       }
 
       let content: string;
@@ -215,7 +225,7 @@ const DatabaseManagement = () => {
           content = JSON.stringify({ 
             metadata, 
             schema,
-            data: exportData,
+            data: exportDataObj,
             instructions: {
               restore: 'Upload this file in Admin > Database > Restore to restore data',
               rebuild: 'Use schema object to recreate table structures in PostgreSQL',
@@ -225,36 +235,8 @@ const DatabaseManagement = () => {
           filename = `izy-scoly-backup-${new Date().toISOString().split('T')[0]}.json`;
           mimeType = 'application/json';
           break;
-        case 'csv':
-          const csvParts: string[] = [];
-          csvParts.push(`# IZY-SCOLY Database Export`);
-          csvParts.push(`# Generated: ${new Date().toISOString()}`);
-          csvParts.push(`# Tables: ${selectedTables.join(', ')}`);
-          csvParts.push(`# Total Records: ${metadata.totalRecords}`);
-          csvParts.push('');
-          
-          for (const [tableName, tableData] of Object.entries(exportData)) {
-            if (tableData.length > 0) {
-              csvParts.push(`### TABLE: ${tableName} ###`);
-              const headers = Object.keys(tableData[0]).join(',');
-              const rows = tableData.map(row => 
-                Object.values(row).map(v => {
-                  if (v === null) return '';
-                  if (typeof v === 'string') return `"${v.replace(/"/g, '""').replace(/\n/g, '\\n')}"`;
-                  if (typeof v === 'object') return `"${JSON.stringify(v).replace(/"/g, '""')}"`;
-                  return v;
-                }).join(',')
-              ).join('\n');
-              csvParts.push(headers);
-              csvParts.push(rows);
-              csvParts.push('');
-            }
-          }
-          content = csvParts.join('\n');
-          filename = `izy-scoly-backup-${new Date().toISOString().split('T')[0]}.csv`;
-          mimeType = 'text/csv';
-          break;
         case 'sql':
+        default:
           const sqlParts: string[] = [];
           sqlParts.push(`-- =============================================`);
           sqlParts.push(`-- IZY-SCOLY Database Backup`);
@@ -268,7 +250,7 @@ const DatabaseManagement = () => {
           sqlParts.push(`-- 3. Enable RLS policies after import`);
           sqlParts.push(`-- =============================================\n`);
           
-          for (const [tableName, tableData] of Object.entries(exportData)) {
+          for (const [tableName, tableData] of Object.entries(exportDataObj)) {
             if (tableData.length > 0) {
               sqlParts.push(`\n-- =============================================`);
               sqlParts.push(`-- Table: ${tableName} (${tableData.length} rows)`);
@@ -604,27 +586,27 @@ const DatabaseManagement = () => {
                 </div>
                 <div>
                   <Label>Format d'export</Label>
-                  <Select value={exportFormat} onValueChange={(v: 'csv' | 'json' | 'sql') => setExportFormat(v)}>
+                  <Select value={exportFormat} onValueChange={(v: 'xlsx' | 'json' | 'sql') => setExportFormat(v)}>
                     <SelectTrigger className="mt-2">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="xlsx">
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet size={16} className="text-green-600" />
+                          Excel (.xlsx) - Recommandé
+                        </div>
+                      </SelectItem>
                       <SelectItem value="json">
                         <div className="flex items-center gap-2">
                           <FileJson size={16} />
-                          JSON (Recommandé pour restauration)
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="csv">
-                        <div className="flex items-center gap-2">
-                          <FileText size={16} />
-                          CSV (Excel, Sheets)
+                          JSON (Pour restauration)
                         </div>
                       </SelectItem>
                       <SelectItem value="sql">
                         <div className="flex items-center gap-2">
                           <Database size={16} />
-                          SQL (PostgreSQL, MySQL)
+                          SQL (PostgreSQL)
                         </div>
                       </SelectItem>
                     </SelectContent>
