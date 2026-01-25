@@ -20,6 +20,34 @@ export const useRealtimeNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Get current device fingerprint
+  const getCurrentDeviceFingerprint = useCallback(() => {
+    return localStorage.getItem('device_fingerprint') || '';
+  }, []);
+
+  // Filter out security notifications that originated from THIS device
+  const filterSecurityNotifications = useCallback((notifs: Notification[]) => {
+    const currentFingerprint = getCurrentDeviceFingerprint();
+    
+    return notifs.filter(n => {
+      // If it's not a security notification, include it
+      if (n.type !== 'security') return true;
+      
+      const data = n.data as Record<string, unknown> | null;
+      
+      // If it doesn't require confirmation, include it
+      if (!data?.requires_confirmation) return true;
+      
+      // If this notification was triggered by the current device, exclude it
+      const originFingerprint = data?.origin_device_fingerprint as string | undefined;
+      if (originFingerprint && originFingerprint === currentFingerprint) {
+        return false; // Don't show on the device that just logged in
+      }
+      
+      return true;
+    });
+  }, [getCurrentDeviceFingerprint]);
+
   // Fetch existing notifications
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -34,14 +62,17 @@ export const useRealtimeNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      // Filter out security notifications from current device
+      const filteredData = filterSecurityNotifications(data || []);
+
+      setNotifications(filteredData);
+      setUnreadCount(filteredData.filter(n => !n.is_read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, filterSecurityNotifications]);
 
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
@@ -88,6 +119,8 @@ export const useRealtimeNotifications = () => {
 
     fetchNotifications();
 
+    const currentFingerprint = getCurrentDeviceFingerprint();
+
     // Subscribe to new notifications for this user
     const channel = supabase
       .channel('user-notifications')
@@ -101,6 +134,16 @@ export const useRealtimeNotifications = () => {
         },
         (payload) => {
           const newNotification = payload.new as Notification;
+          const data = newNotification.data as Record<string, unknown> | null;
+          
+          // If it's a security notification from THIS device, ignore it
+          if (newNotification.type === 'security' && data?.requires_confirmation) {
+            const originFingerprint = data?.origin_device_fingerprint as string | undefined;
+            if (originFingerprint && originFingerprint === currentFingerprint) {
+              console.log('[Notifications] Ignoring security alert for current device');
+              return; // Don't show on the device that just logged in
+            }
+          }
           
           // Add to state
           setNotifications(prev => [newNotification, ...prev]);
@@ -118,7 +161,7 @@ export const useRealtimeNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, fetchNotifications, toast]);
+  }, [user, fetchNotifications, toast, getCurrentDeviceFingerprint]);
 
   // Subscribe to order updates for admins
   useEffect(() => {
@@ -167,7 +210,7 @@ export const useRealtimeNotifications = () => {
     };
   }, [user, isAdmin, toast]);
 
-  // Get security notifications requiring confirmation
+  // Get security notifications requiring confirmation (already filtered)
   const securityNotifications = notifications.filter(n => {
     const data = n.data as Record<string, unknown> | null;
     return n.type === 'security' && data?.requires_confirmation === true && !n.is_read;

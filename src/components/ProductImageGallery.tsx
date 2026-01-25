@@ -14,12 +14,27 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
 
   const allImages = images.length > 0 ? images : ["/placeholder.svg"];
 
-  const goToPrevious = () => {
+  const goToPrevious = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setSelectedIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
   };
 
-  const goToNext = () => {
+  const goToNext = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setSelectedIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    // Only open zoom if clicking on the image itself, not on buttons
+    if ((e.target as HTMLElement).tagName === 'IMG') {
+      setIsZoomOpen(true);
+    }
+  };
+
+  const handleThumbnailClick = (index: number) => {
+    setSelectedIndex(index);
   };
 
   return (
@@ -30,25 +45,27 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
           src={allImages[selectedIndex]}
           alt={`${productName} - Image ${selectedIndex + 1}`}
           className="w-full h-full object-contain cursor-zoom-in"
-          onClick={() => setIsZoomOpen(true)}
+          onClick={handleImageClick}
         />
 
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows - Always visible on mobile, hover on desktop */}
         {allImages.length > 1 && (
           <>
             <Button
               variant="secondary"
               size="icon"
-              className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-10 w-10 rounded-full shadow-lg"
+              className="absolute left-2 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity h-10 w-10 rounded-full shadow-lg z-10"
               onClick={goToPrevious}
+              type="button"
             >
               <ChevronLeft size={20} />
             </Button>
             <Button
               variant="secondary"
               size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-10 w-10 rounded-full shadow-lg"
+              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity h-10 w-10 rounded-full shadow-lg z-10"
               onClick={goToNext}
+              type="button"
             >
               <ChevronRight size={20} />
             </Button>
@@ -59,8 +76,9 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
         <Button
           variant="secondary"
           size="icon"
-          className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-10 w-10 rounded-full shadow-lg"
+          className="absolute bottom-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity h-10 w-10 rounded-full shadow-lg z-10"
           onClick={() => setIsZoomOpen(true)}
+          type="button"
         >
           <ZoomIn size={18} />
         </Button>
@@ -79,7 +97,8 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
           {allImages.map((image, index) => (
             <button
               key={index}
-              onClick={() => setSelectedIndex(index)}
+              type="button"
+              onClick={() => handleThumbnailClick(index)}
               className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all ${
                 selectedIndex === index
                   ? "border-primary ring-2 ring-primary/20"
@@ -113,6 +132,7 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
                   size="icon"
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white h-12 w-12 rounded-full"
                   onClick={goToPrevious}
+                  type="button"
                 >
                   <ChevronLeft size={24} />
                 </Button>
@@ -121,6 +141,7 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
                   size="icon"
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white h-12 w-12 rounded-full"
                   onClick={goToNext}
+                  type="button"
                 >
                   <ChevronRight size={24} />
                 </Button>
@@ -133,7 +154,8 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
                 {allImages.map((image, index) => (
                   <button
                     key={index}
-                    onClick={() => setSelectedIndex(index)}
+                    type="button"
+                    onClick={() => handleThumbnailClick(index)}
                     className={`w-12 h-12 rounded overflow-hidden border-2 transition-all ${
                       selectedIndex === index
                         ? "border-white"
