@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Bell, Check, CheckCheck, Package, CreditCard, Newspaper, Heart, MessageCircle, Shield, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +20,7 @@ const NotificationBell = () => {
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading, securityNotifications } = useRealtimeNotifications();
 
+  // Compute next unhandled security notification
   const nextSecurityNotification = useMemo(() => {
     return securityNotifications.find((n: any) => n?.id && !dismissedSecurityIds.has(n.id)) || null;
   }, [securityNotifications, dismissedSecurityIds]);
@@ -31,7 +32,7 @@ const NotificationBell = () => {
     }
   }, [nextSecurityNotification, securityAlert]);
 
-  const handleCloseSecurityAlert = async () => {
+  const handleCloseSecurityAlert = useCallback(async () => {
     if (!securityAlert?.id) {
       setSecurityAlert(null);
       return;
@@ -52,22 +53,22 @@ const NotificationBell = () => {
     } finally {
       setSecurityAlert(null);
     }
-  };
+  }, [securityAlert, markAsRead]);
 
   const getIcon = (type: string) => {
     switch (type) {
       case 'order':
         return <Package size={16} className="text-primary" />;
       case 'payment':
-        return <CreditCard size={16} className="text-green-500" />;
+        return <CreditCard size={16} className="text-green-600" />;
       case 'article':
-        return <Newspaper size={16} className="text-blue-500" />;
+        return <Newspaper size={16} className="text-blue-600" />;
       case 'reaction':
-        return <Heart size={16} className="text-pink-500" />;
+        return <Heart size={16} className="text-pink-600" />;
       case 'comment':
-        return <MessageCircle size={16} className="text-orange-500" />;
+        return <MessageCircle size={16} className="text-orange-600" />;
       case 'security':
-        return <Shield size={16} className="text-red-500" />;
+        return <Shield size={16} className="text-destructive" />;
       default:
         return <Bell size={16} className="text-muted-foreground" />;
     }
@@ -156,7 +157,7 @@ const NotificationBell = () => {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(notification.created_at), {
+                        {formatDistanceToNow(new Date(notification.created_at || ''), {
                           addSuffix: true,
                           locale: fr,
                         })}

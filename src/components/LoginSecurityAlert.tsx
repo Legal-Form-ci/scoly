@@ -32,6 +32,7 @@ const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) 
   if (!data?.requires_confirmation) return null;
 
   const handleConfirm = async (isMe: boolean) => {
+    if (loading) return; // guard against double clicks
     setLoading(true);
     try {
       // Update login session
@@ -57,13 +58,13 @@ const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) 
       } else {
         toast.warning('Connexion bloquée ! Si ce n\'était pas vous, changez votre mot de passe immédiatement.');
       }
-
-      onClose();
     } catch (error) {
       console.error('Error confirming login:', error);
       toast.error('Erreur lors de la confirmation');
     } finally {
       setLoading(false);
+      // Always close after processing
+      onClose();
     }
   };
 
