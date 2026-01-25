@@ -89,8 +89,8 @@ const defaultFAQs: FAQItem[] = [
     id: "8",
     question_fr: "Les paiements sont-ils sécurisés ?",
     question_en: "Are payments secure?",
-    answer_fr: "Absolument ! Nous utilisons FedaPay, une plateforme de paiement certifiée et sécurisée. Vos données bancaires ne sont jamais stockées sur nos serveurs.",
-    answer_en: "Absolutely! We use FedaPay, a certified and secure payment platform. Your banking data is never stored on our servers.",
+    answer_fr: "Absolument ! Nous utilisons KkiaPay, une plateforme de paiement certifiée et sécurisée. Vos données bancaires ne sont jamais stockées sur nos serveurs.",
+    answer_en: "Absolutely! We use KkiaPay, a certified and secure payment platform. Your banking data is never stored on our servers.",
     category: "paiement",
     sort_order: 8
   }

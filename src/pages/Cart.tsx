@@ -27,28 +27,7 @@ const Cart = () => {
     return new Intl.NumberFormat('fr-FR').format(price) + ' ' + t.common.currency;
   };
 
-  if (!user) {
-    return (
-      <main className="min-h-screen bg-background">
-        <Navbar />
-        <div className="pt-24 pb-12">
-          <div className="container mx-auto px-4 text-center py-20">
-            <ShoppingBag size={64} className="mx-auto text-muted-foreground mb-4" />
-            <h1 className="text-2xl font-display font-bold text-foreground mb-4">
-              {t.nav.cart}
-            </h1>
-            <p className="text-muted-foreground mb-6">
-              {t.shop.emptyCart}
-            </p>
-            <Link to="/auth">
-              <Button variant="hero">{t.nav.login}</Button>
-            </Link>
-          </div>
-        </div>
-        <Footer />
-      </main>
-    );
-  }
+  // Guest users can now view their cart - login only required at checkout
 
   return (
     <main className="min-h-screen bg-background">
@@ -167,12 +146,21 @@ const Cart = () => {
                     </div>
                   </div>
 
-                  <Link to="/checkout" className="block">
-                    <Button variant="hero" className="w-full">
-                      {t.shop.proceedCheckout}
-                      <ArrowRight size={18} />
-                    </Button>
-                  </Link>
+                  {user ? (
+                    <Link to="/checkout" className="block">
+                      <Button variant="hero" className="w-full">
+                        {t.shop.proceedCheckout}
+                        <ArrowRight size={18} />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to="/auth?redirect=/checkout" className="block">
+                      <Button variant="hero" className="w-full">
+                        {t.nav.login} pour commander
+                        <ArrowRight size={18} />
+                      </Button>
+                    </Link>
+                  )}
 
                   <Link to="/shop" className="block mt-3">
                     <Button variant="outline" className="w-full">

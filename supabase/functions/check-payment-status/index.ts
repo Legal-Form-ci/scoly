@@ -15,7 +15,6 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const fedapaySecretKey = Deno.env.get('FEDAPAY_SECRET_KEY');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -46,95 +45,6 @@ serve(async (req) => {
         JSON.stringify({ error: 'Paiement non trouvé' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    }
-
-    // If payment is still pending/processing and we have FedaPay credentials, check with FedaPay
-    if ((payment.status === 'pending' || payment.status === 'processing') && fedapaySecretKey) {
-      const fedapayTransactionId = payment.payment_reference || payment.metadata?.fedapay_transaction_id;
-      
-      if (fedapayTransactionId) {
-        try {
-          const fedapayResponse = await fetch(`https://api.fedapay.com/v1/transactions/${fedapayTransactionId}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${fedapaySecretKey}`,
-              'Content-Type': 'application/json',
-            }
-          });
-
-          if (fedapayResponse.ok) {
-            const fedapayData = await fedapayResponse.json();
-            console.log('FedaPay transaction status:', fedapayData);
-
-            const fedapayStatus = fedapayData.v1?.transaction?.status || fedapayData.status;
-            
-            // Map FedaPay status to our status
-            let newStatus = payment.status;
-            if (fedapayStatus === 'approved' || fedapayStatus === 'transferred') {
-              newStatus = 'completed';
-            } else if (fedapayStatus === 'declined' || fedapayStatus === 'cancelled' || fedapayStatus === 'refunded') {
-              newStatus = 'failed';
-            }
-
-            // Update if status changed
-            if (newStatus !== payment.status) {
-              const updateData: Record<string, unknown> = {
-                status: newStatus,
-                metadata: {
-                  ...payment.metadata,
-                  fedapay_status_check: fedapayStatus,
-                  last_checked_at: new Date().toISOString()
-                }
-              };
-
-              if (newStatus === 'completed') {
-                updateData.completed_at = new Date().toISOString();
-              }
-
-              await supabase
-                .from('payments')
-                .update(updateData)
-                .eq('id', payment.id);
-
-              // Update order if completed
-              if (newStatus === 'completed') {
-                const { data: paymentData } = await supabase
-                  .from('payments')
-                  .select('order_id, user_id, amount')
-                  .eq('id', payment.id)
-                  .single();
-
-                if (paymentData?.order_id) {
-                  await supabase
-                    .from('orders')
-                    .update({ status: 'confirmed' })
-                    .eq('id', paymentData.order_id);
-
-                  // Create notification for user
-                  if (paymentData.user_id) {
-                    await supabase.from('notifications').insert({
-                      user_id: paymentData.user_id,
-                      type: 'payment',
-                      title: 'Paiement réussi',
-                      message: `Votre paiement de ${paymentData.amount} FCFA a été confirmé.`,
-                      data: {
-                        payment_id: payment.id,
-                        order_id: paymentData.order_id,
-                        amount: paymentData.amount
-                      }
-                    });
-                  }
-                }
-              }
-
-              payment.status = newStatus;
-            }
-          }
-        } catch (fedapayError) {
-          console.error('Error checking FedaPay status:', fedapayError);
-          // Continue with local status
-        }
-      }
     }
 
     console.log('Payment status:', payment.status);
