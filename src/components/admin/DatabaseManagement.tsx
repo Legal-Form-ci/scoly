@@ -21,7 +21,12 @@ import {
   CloudUpload,
   Play,
   AlertCircle,
-  FolderSync
+  FolderSync,
+  Cloud,
+  Save,
+  Calendar,
+  Link2,
+  History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +42,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
+import BackupSettings from "./BackupSettings";
 
 interface TableInfo {
   name: string;
@@ -497,6 +503,7 @@ const DatabaseManagement = () => {
           <TabsTrigger value="tables">Tables & Données</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
           <TabsTrigger value="restore">Restauration</TabsTrigger>
+          <TabsTrigger value="backup">Sauvegardes Cloud</TabsTrigger>
           <TabsTrigger value="schema">Schéma Complet</TabsTrigger>
           <TabsTrigger value="functions">Fonctions</TabsTrigger>
           <TabsTrigger value="roles">Rôles</TabsTrigger>
@@ -806,6 +813,11 @@ const DatabaseManagement = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Backup Tab */}
+        <TabsContent value="backup" className="space-y-6">
+          <BackupSettings />
         </TabsContent>
 
         {/* Schema Tab */}

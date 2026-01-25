@@ -318,20 +318,27 @@ const UserManagement = () => {
 
       toast.success(t.userUpdated);
     } else {
-      // Create new user via edge function (since we can't create auth users directly)
-      const { data, error } = await supabase.functions.invoke('bootstrap-admin', {
+      // Create new user via edge function
+      const { data: session } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
           email: formData.email,
           password: formData.password,
           firstName: formData.first_name,
           lastName: formData.last_name,
-          roles: formData.roles,
-          token: '@Scoly'
+          phone: formData.phone,
+          roles: formData.roles.length > 0 ? formData.roles : ['user']
         }
       });
 
       if (error) {
-        toast.error(t.error);
+        console.error('Create user error:', error);
+        toast.error(error.message || t.error);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
         return;
       }
 
