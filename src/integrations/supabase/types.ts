@@ -695,6 +695,42 @@ export type Database = {
         }
         Relationships: []
       }
+      login_sessions: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string | null
+          device_info: string | null
+          expires_at: string | null
+          id: string
+          ip_address: string | null
+          is_blocked: boolean | null
+          is_confirmed: boolean | null
+          user_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string | null
+          device_info?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_blocked?: boolean | null
+          is_confirmed?: boolean | null
+          user_id: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string | null
+          device_info?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_blocked?: boolean | null
+          is_confirmed?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -1362,7 +1398,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vendor_public_info: {
+        Row: {
+          banner_url: string | null
+          city: string | null
+          id: string | null
+          is_verified: boolean | null
+          logo_url: string | null
+          store_description: string | null
+          store_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          city?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          store_description?: string | null
+          store_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          city?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          store_description?: string | null
+          store_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_rate_limit: {

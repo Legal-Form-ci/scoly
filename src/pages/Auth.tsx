@@ -13,6 +13,7 @@ import Logo from "@/components/Logo";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useRateLimit } from "@/hooks/useRateLimit";
+import { useLoginSecurity } from "@/hooks/useLoginSecurity";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -35,6 +36,7 @@ const Auth = () => {
   // Rate limiting for login/signup
   const loginRateLimit = useRateLimit('auth_login', { maxAttempts: 5, windowSeconds: 300, blockSeconds: 900 });
   const signupRateLimit = useRateLimit('auth_signup', { maxAttempts: 3, windowSeconds: 600, blockSeconds: 1800 });
+  const { recordLoginSession } = useLoginSecurity();
 
   const redirectToDashboard = async () => {
     const { data: { user: u } } = await supabase.auth.getUser();
@@ -238,6 +240,9 @@ const Auth = () => {
                .from('profiles')
                .update({ email: loggedUser.email })
                .eq('id', loggedUser.id);
+             
+             // Record login session for security tracking
+             await recordLoginSession(loggedUser.id);
            }
            await redirectToDashboard();
          }
