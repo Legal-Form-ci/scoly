@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Bell, Check, CheckCheck, Package, CreditCard, Newspaper, Heart, MessageCircle, Shield, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,15 +16,43 @@ import LoginSecurityAlert from './LoginSecurityAlert';
 const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const [securityAlert, setSecurityAlert] = useState<any>(null);
+  const [dismissedSecurityIds, setDismissedSecurityIds] = useState<Set<string>>(() => new Set());
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading, securityNotifications } = useRealtimeNotifications();
 
+  const nextSecurityNotification = useMemo(() => {
+    return securityNotifications.find((n: any) => n?.id && !dismissedSecurityIds.has(n.id)) || null;
+  }, [securityNotifications, dismissedSecurityIds]);
+
   // Show security alert if there are pending confirmations
   useEffect(() => {
-    if (securityNotifications.length > 0 && !securityAlert) {
-      setSecurityAlert(securityNotifications[0]);
+    if (nextSecurityNotification && !securityAlert) {
+      setSecurityAlert(nextSecurityNotification);
     }
-  }, [securityNotifications, securityAlert]);
+  }, [nextSecurityNotification, securityAlert]);
+
+  const handleCloseSecurityAlert = async () => {
+    if (!securityAlert?.id) {
+      setSecurityAlert(null);
+      return;
+    }
+
+    // Prevent infinite reopen loops even if the DB update is delayed/fails.
+    setDismissedSecurityIds(prev => {
+      const next = new Set(prev);
+      next.add(securityAlert.id);
+      return next;
+    });
+
+    // Best-effort: mark as read in DB + update local state (hook)
+    try {
+      await markAsRead(securityAlert.id);
+    } catch {
+      // markAsRead already logs internally; keep UI usable.
+    } finally {
+      setSecurityAlert(null);
+    }
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -66,7 +94,7 @@ const NotificationBell = () => {
       {securityAlert && (
         <LoginSecurityAlert
           notification={securityAlert}
-          onClose={() => setSecurityAlert(null)}
+          onClose={handleCloseSecurityAlert}
         />
       )}
       <Popover open={open} onOpenChange={setOpen}>
