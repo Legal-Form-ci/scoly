@@ -86,16 +86,16 @@ const FeaturedProductsCarousel = () => {
   return (
     <section className="py-16 bg-muted/50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-display font-bold text-foreground">
-              Produits populaires
-            </h2>
-            <p className="text-muted-foreground mt-2">
-              Les fournitures les plus demandées par nos clients
-            </p>
-          </div>
-          <div className="flex gap-2">
+        {/* Header - Centered */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-display font-bold text-foreground">
+            Produits populaires
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            Les fournitures les plus demandées par nos clients
+          </p>
+          {/* Navigation buttons centered below */}
+          <div className="flex justify-center gap-2 mt-4">
             <Button
               variant="outline"
               size="icon"

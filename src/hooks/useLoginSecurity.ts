@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export const useLoginSecurity = () => {
   const { user } = useAuth();
 
-  // Get device info
+  // Get device info - unique fingerprint for this device
   const getDeviceInfo = useCallback(() => {
     const ua = navigator.userAgent;
     let device = 'Navigateur inconnu';
@@ -19,27 +19,57 @@ export const useLoginSecurity = () => {
     return `${device} sur ${platform}`;
   }, []);
 
-  // Send push notification for login attempt
-  const sendLoginPushNotification = useCallback(async (userId: string, deviceInfo: string, ipAddress: string) => {
+  // Generate a unique device fingerprint
+  const getDeviceFingerprint = useCallback(() => {
+    const ua = navigator.userAgent;
+    const platform = navigator.platform;
+    const language = navigator.language;
+    const screen = `${window.screen.width}x${window.screen.height}`;
+    // Create a simple hash-like string for this device
+    const fingerprint = btoa(`${ua}|${platform}|${language}|${screen}`).slice(0, 32);
+    return fingerprint;
+  }, []);
+
+  // Send push notification to OTHER devices (not the current one)
+  const sendLoginPushNotification = useCallback(async (userId: string, deviceInfo: string, ipAddress: string, currentDeviceFingerprint: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('send-push-notification', {
-        body: {
-          user_id: userId,
-          title: 'Nouvelle connexion détectée',
-          body: `Une connexion a été détectée depuis ${deviceInfo}. Est-ce vous ?`,
-          data: {
-            type: 'security',
-            requires_confirmation: true,
-            device_info: deviceInfo,
-            ip_address: ipAddress
-          }
-        }
+      // Get all push subscriptions for this user
+      const { data: subscriptions, error: subError } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (subError) {
+        console.error('[Push] Error fetching subscriptions:', subError);
+        return;
+      }
+
+      if (!subscriptions || subscriptions.length === 0) {
+        console.log('[Push] No other devices to notify');
+        return;
+      }
+
+      // Store notification in database for in-app display on OTHER devices
+      // The notification will include the current device fingerprint so we can filter it out
+      const { error: notifError } = await supabase.from('notifications').insert({
+        user_id: userId,
+        type: 'security',
+        title: 'Nouvelle connexion détectée',
+        message: `Une connexion a été détectée depuis ${deviceInfo}. Est-ce vous ?`,
+        data: {
+          type: 'security',
+          requires_confirmation: true,
+          device_info: deviceInfo,
+          ip_address: ipAddress,
+          origin_device_fingerprint: currentDeviceFingerprint // The device that triggered this
+        },
+        is_read: false
       });
 
-      if (error) {
-        console.error('[Push] Error sending login notification:', error);
+      if (notifError) {
+        console.error('[Push] Error storing notification:', notifError);
       } else {
-        console.log('[Push] Login notification sent:', data);
+        console.log('[Push] Login notification created for other devices');
       }
     } catch (error) {
       console.error('[Push] Failed to send login notification:', error);
@@ -50,6 +80,10 @@ export const useLoginSecurity = () => {
   const recordLoginSession = useCallback(async (userId: string) => {
     try {
       const deviceInfo = getDeviceInfo();
+      const deviceFingerprint = getDeviceFingerprint();
+      
+      // Store fingerprint in localStorage so we can identify this device later
+      localStorage.setItem('device_fingerprint', deviceFingerprint);
       
       // Get IP from a service (in production, this would be from the server)
       let ipAddress = 'Non disponible';
@@ -72,13 +106,13 @@ export const useLoginSecurity = () => {
       if (error) {
         console.error('Error recording login session:', error);
       } else {
-        // Send push notification after recording session
-        await sendLoginPushNotification(userId, deviceInfo, ipAddress);
+        // Send push notification to OTHER devices only
+        await sendLoginPushNotification(userId, deviceInfo, ipAddress, deviceFingerprint);
       }
     } catch (error) {
       console.error('Error in recordLoginSession:', error);
     }
-  }, [getDeviceInfo, sendLoginPushNotification]);
+  }, [getDeviceInfo, getDeviceFingerprint, sendLoginPushNotification]);
 
   // Check for blocked sessions
   const checkBlockedSessions = useCallback(async () => {
@@ -106,6 +140,8 @@ export const useLoginSecurity = () => {
   const getPendingConfirmations = useCallback(async () => {
     if (!user) return [];
 
+    const currentFingerprint = localStorage.getItem('device_fingerprint') || '';
+
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -117,9 +153,18 @@ export const useLoginSecurity = () => {
 
       if (error) throw error;
 
+      // Filter: only show notifications that are NOT from the current device
       return data?.filter(n => {
         const notifData = n.data as Record<string, unknown> | null;
-        return notifData?.requires_confirmation === true;
+        if (!notifData?.requires_confirmation) return false;
+        
+        // If this notification was triggered by the current device, don't show it here
+        const originFingerprint = notifData?.origin_device_fingerprint as string | undefined;
+        if (originFingerprint && originFingerprint === currentFingerprint) {
+          return false; // Don't show on the device that just logged in
+        }
+        
+        return true;
       }) || [];
     } catch (error) {
       console.error('Error getting pending confirmations:', error);
@@ -132,6 +177,7 @@ export const useLoginSecurity = () => {
     checkBlockedSessions,
     getPendingConfirmations,
     getDeviceInfo,
+    getDeviceFingerprint,
     sendLoginPushNotification
   };
 };
