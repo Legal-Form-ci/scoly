@@ -54,14 +54,14 @@ interface BackupHistory {
   status: string;
 }
 
-// List of all tables in the database
+// List of all tables in the database (ordered by dependencies)
 const ALL_TABLES = [
-  'profiles', 'products', 'categories', 'orders', 'order_items', 
-  'cart_items', 'user_roles', 'articles', 'article_comments', 
-  'article_likes', 'article_purchases', 'advertisements', 'campaigns',
-  'commissions', 'coupons', 'coupon_redemptions', 'email_logs', 
-  'faq', 'notifications', 'payments', 'platform_settings', 
-  'promotions', 'resources', 'reviews', 'vendor_settings', 'wishlist'
+  'categories', 'platform_settings', 'faq', 'coupons', 'advertisements', 
+  'campaigns', 'promotions', 'resources', 'profiles', 'user_roles', 
+  'vendor_settings', 'products', 'articles', 'article_share_counts',
+  'article_reactions', 'article_comments', 'article_likes', 'article_purchases',
+  'orders', 'order_items', 'payments', 'commissions', 'coupon_redemptions',
+  'cart_items', 'wishlist', 'reviews', 'notifications', 'email_logs', 'analytics_events'
 ];
 
 // Database roles
@@ -85,6 +85,10 @@ const DB_FUNCTIONS = [
   { name: 'notify_order_status_change', description: 'Notifications commande', returns: 'TRIGGER' },
   { name: 'notify_admin_new_order', description: 'Alerte nouvelle commande', returns: 'TRIGGER' },
   { name: 'update_updated_at_column', description: 'Mise à jour timestamp', returns: 'TRIGGER' },
+  { name: 'increment_article_share', description: 'Compteur partages', returns: 'TABLE' },
+  { name: 'get_share_stats', description: 'Stats partages articles', returns: 'TABLE' },
+  { name: 'log_analytics_event', description: 'Enregistrement analytics', returns: 'VOID' },
+  { name: 'get_analytics_summary', description: 'Résumé analytics', returns: 'TABLE' },
 ];
 
 const DatabaseManagement = () => {
@@ -97,6 +101,8 @@ const DatabaseManagement = () => {
   const [previewTable, setPreviewTable] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState(0);
+  const [restoreResult, setRestoreResult] = useState<any>(null);
+  const [restoreMode, setRestoreMode] = useState<'replace' | 'merge'>('replace');
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [autoSync, setAutoSync] = useState(false);
 
@@ -168,11 +174,15 @@ const DatabaseManagement = () => {
     setExporting(true);
     try {
       const exportData: Record<string, any[]> = {};
+      const schema: Record<string, string[]> = {};
       const metadata = {
         exportedAt: new Date().toISOString(),
-        version: '1.0',
+        version: '2.0',
+        platform: 'Izy-Scoly',
         tables: selectedTables,
-        format: exportFormat
+        format: exportFormat,
+        totalRecords: 0,
+        description: 'Complete database backup for restoration or migration. Use JSON format for full restore functionality.',
       };
       
       for (const tableName of selectedTables) {
@@ -182,6 +192,11 @@ const DatabaseManagement = () => {
         
         if (!error && data) {
           exportData[tableName] = data;
+          metadata.totalRecords += data.length;
+          // Capture column names for schema reference
+          if (data.length > 0) {
+            schema[tableName] = Object.keys(data[0]);
+          }
         }
       }
 
@@ -191,37 +206,68 @@ const DatabaseManagement = () => {
 
       switch (exportFormat) {
         case 'json':
-          content = JSON.stringify({ metadata, data: exportData }, null, 2);
+          content = JSON.stringify({ 
+            metadata, 
+            schema,
+            data: exportData,
+            instructions: {
+              restore: 'Upload this file in Admin > Database > Restore to restore data',
+              rebuild: 'Use schema object to recreate table structures in PostgreSQL',
+              notes: 'Images and files are stored as URLs to Supabase storage. Ensure storage buckets exist before restore.'
+            }
+          }, null, 2);
           filename = `izy-scoly-backup-${new Date().toISOString().split('T')[0]}.json`;
           mimeType = 'application/json';
           break;
         case 'csv':
           const csvParts: string[] = [];
+          csvParts.push(`# IZY-SCOLY Database Export`);
+          csvParts.push(`# Generated: ${new Date().toISOString()}`);
+          csvParts.push(`# Tables: ${selectedTables.join(', ')}`);
+          csvParts.push(`# Total Records: ${metadata.totalRecords}`);
+          csvParts.push('');
+          
           for (const [tableName, tableData] of Object.entries(exportData)) {
             if (tableData.length > 0) {
+              csvParts.push(`### TABLE: ${tableName} ###`);
               const headers = Object.keys(tableData[0]).join(',');
               const rows = tableData.map(row => 
-                Object.values(row).map(v => 
-                  typeof v === 'string' ? `"${v.replace(/"/g, '""')}"` : v
-                ).join(',')
+                Object.values(row).map(v => {
+                  if (v === null) return '';
+                  if (typeof v === 'string') return `"${v.replace(/"/g, '""').replace(/\n/g, '\\n')}"`;
+                  if (typeof v === 'object') return `"${JSON.stringify(v).replace(/"/g, '""')}"`;
+                  return v;
+                }).join(',')
               ).join('\n');
-              csvParts.push(`--- TABLE: ${tableName} ---\n${headers}\n${rows}`);
+              csvParts.push(headers);
+              csvParts.push(rows);
+              csvParts.push('');
             }
           }
-          content = csvParts.join('\n\n');
+          content = csvParts.join('\n');
           filename = `izy-scoly-backup-${new Date().toISOString().split('T')[0]}.csv`;
           mimeType = 'text/csv';
           break;
         case 'sql':
           const sqlParts: string[] = [];
+          sqlParts.push(`-- =============================================`);
           sqlParts.push(`-- IZY-SCOLY Database Backup`);
           sqlParts.push(`-- Generated: ${new Date().toISOString()}`);
-          sqlParts.push(`-- Tables: ${selectedTables.join(', ')}\n`);
+          sqlParts.push(`-- Tables: ${selectedTables.join(', ')}`);
+          sqlParts.push(`-- Total Records: ${metadata.totalRecords}`);
+          sqlParts.push(`-- =============================================`);
+          sqlParts.push(`-- Instructions:`);
+          sqlParts.push(`-- 1. Create tables first (if not exists)`);
+          sqlParts.push(`-- 2. Run this script in PostgreSQL`);
+          sqlParts.push(`-- 3. Enable RLS policies after import`);
+          sqlParts.push(`-- =============================================\n`);
           
           for (const [tableName, tableData] of Object.entries(exportData)) {
             if (tableData.length > 0) {
-              sqlParts.push(`\n-- Table: ${tableName}`);
-              sqlParts.push(`DELETE FROM public.${tableName};`);
+              sqlParts.push(`\n-- =============================================`);
+              sqlParts.push(`-- Table: ${tableName} (${tableData.length} rows)`);
+              sqlParts.push(`-- =============================================`);
+              sqlParts.push(`TRUNCATE TABLE public.${tableName} CASCADE;`);
               
               const columns = Object.keys(tableData[0]);
               for (const row of tableData) {
@@ -229,7 +275,8 @@ const DatabaseManagement = () => {
                   const val = row[col];
                   if (val === null) return 'NULL';
                   if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
-                  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+                  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'::jsonb`;
                   return val;
                 }).join(', ');
                 sqlParts.push(`INSERT INTO public.${tableName} (${columns.join(', ')}) VALUES (${values});`);
@@ -252,7 +299,7 @@ const DatabaseManagement = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(`Export ${exportFormat.toUpperCase()} téléchargé avec succès`);
+      toast.success(`Export ${exportFormat.toUpperCase()} téléchargé avec succès (${metadata.totalRecords} enregistrements)`);
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Erreur lors de l\'export');
@@ -280,24 +327,32 @@ const DatabaseManagement = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!confirm('⚠️ ATTENTION: Cette opération va remplacer les données existantes. Êtes-vous sûr de vouloir continuer?')) {
+    const modeText = restoreMode === 'replace' 
+      ? '⚠️ ATTENTION: Mode REMPLACEMENT - Cette opération va SUPPRIMER toutes les données existantes et les remplacer. Êtes-vous sûr?'
+      : '⚠️ Mode FUSION - Les données existantes seront mises à jour, les nouvelles seront ajoutées. Continuer?';
+
+    if (!confirm(modeText)) {
       event.target.value = '';
       return;
     }
 
     setRestoring(true);
-    setRestoreProgress(0);
+    setRestoreProgress(10);
+    setRestoreResult(null);
 
     try {
       const text = await file.text();
       let data: any;
+      let metadata: any = null;
 
       try {
         const parsed = JSON.parse(text);
-        data = parsed.data || parsed; // Support both formats
+        data = parsed.data || parsed;
+        metadata = parsed.metadata || null;
       } catch {
         toast.error('Format de fichier invalide. Utilisez un fichier JSON exporté.');
         setRestoring(false);
+        setRestoreProgress(0);
         event.target.value = '';
         return;
       }
@@ -306,18 +361,24 @@ const DatabaseManagement = () => {
       if (tablesToRestore.length === 0) {
         toast.error('Aucune table reconnue dans le fichier.');
         setRestoring(false);
+        setRestoreProgress(0);
         event.target.value = '';
         return;
       }
 
+      setRestoreProgress(30);
+
       // Backend restore (service role) => remplace réellement les données côté cloud
       const { data: result, error } = await supabase.functions.invoke('restore-database', {
-        body: { data, tables: tablesToRestore },
+        body: { data, tables: tablesToRestore, mode: restoreMode },
       });
+
+      setRestoreProgress(90);
 
       if (error || !result?.success) {
         console.error('Restore error:', error || result);
-        toast.error('Erreur lors de la restauration');
+        toast.error(`Erreur: ${result?.error || error?.message || 'Restauration échouée'}`);
+        setRestoreResult({ success: false, error: result?.error || error?.message });
         setRestoring(false);
         setRestoreProgress(0);
         event.target.value = '';
@@ -325,15 +386,21 @@ const DatabaseManagement = () => {
       }
 
       setRestoreProgress(100);
-      toast.success(`Restauration terminée: ${result.imported}/${result.total} enregistrements restaurés`);
+      setRestoreResult(result);
+      
+      const successMsg = restoreMode === 'replace'
+        ? `✅ Restauration complète: ${result.imported}/${result.total} enregistrements (${result.deleted} supprimés)`
+        : `✅ Fusion terminée: ${result.imported} enregistrements mis à jour/ajoutés`;
+      
+      toast.success(successMsg);
       fetchTableStats();
     } catch (error) {
       console.error('Restore error:', error);
-      toast.error('Erreur lors de la restauration');
+      toast.error('Erreur inattendue lors de la restauration');
+      setRestoreResult({ success: false, error: String(error) });
     }
 
     setRestoring(false);
-    setRestoreProgress(0);
     event.target.value = '';
   };
 
@@ -588,24 +655,69 @@ const DatabaseManagement = () => {
                 Restaurer la base de données
               </CardTitle>
               <CardDescription>
-                Importez un fichier JSON de sauvegarde pour restaurer les données
+                Importez un fichier JSON de sauvegarde pour restaurer les données cloud
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {restoring ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <span className="font-medium">Restauration en cours...</span>
+            <CardContent className="space-y-6">
+              {/* Mode Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div 
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    restoreMode === 'replace' 
+                      ? 'border-destructive bg-destructive/10' 
+                      : 'border-muted hover:border-destructive/50'
+                  }`}
+                  onClick={() => setRestoreMode('replace')}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle size={18} className="text-destructive" />
+                    <span className="font-semibold">Remplacement Total</span>
                   </div>
-                  <Progress value={restoreProgress} className="h-2" />
-                  <p className="text-sm text-muted-foreground">{restoreProgress}% terminé</p>
+                  <p className="text-sm text-muted-foreground">
+                    Supprime toutes les données existantes puis insère les données du fichier. 
+                    Recommandé pour restauration complète.
+                  </p>
+                </div>
+                <div 
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    restoreMode === 'merge' 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-muted hover:border-primary/50'
+                  }`}
+                  onClick={() => setRestoreMode('merge')}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <FolderSync size={18} className="text-primary" />
+                    <span className="font-semibold">Fusion (Merge)</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Met à jour les enregistrements existants, ajoute les nouveaux. 
+                    Conserve les données non présentes dans le fichier.
+                  </p>
+                </div>
+              </div>
+
+              {restoring ? (
+                <div className="space-y-4 p-6 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="font-semibold text-lg">Restauration en cours...</span>
+                  </div>
+                  <Progress value={restoreProgress} className="h-3" />
+                  <p className="text-sm text-muted-foreground">
+                    {restoreProgress < 30 ? 'Lecture du fichier...' : 
+                     restoreProgress < 90 ? 'Mise à jour de la base de données...' : 
+                     'Finalisation...'}
+                    ({restoreProgress}%)
+                  </p>
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
                   <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-lg font-medium mb-2">Sélectionnez un fichier de sauvegarde</p>
-                  <p className="text-sm text-muted-foreground mb-4">Format supporté: JSON (exporté depuis ce module)</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Format supporté: JSON (exporté depuis ce module ou compatible)
+                  </p>
                   <input
                     type="file"
                     accept=".json"
@@ -613,23 +725,81 @@ const DatabaseManagement = () => {
                     className="hidden"
                     id="restore-file"
                   />
-                  <Button asChild variant="outline">
+                  <Button asChild variant={restoreMode === 'replace' ? 'destructive' : 'default'}>
                     <label htmlFor="restore-file" className="cursor-pointer">
                       <Upload size={18} />
-                      Sélectionner un fichier
+                      {restoreMode === 'replace' ? 'Restaurer (Remplacement)' : 'Restaurer (Fusion)'}
                     </label>
                   </Button>
                 </div>
               )}
 
-              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+              {/* Restore Results */}
+              {restoreResult && (
+                <div className={`p-4 rounded-lg border ${
+                  restoreResult.success 
+                    ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900' 
+                    : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900'
+                }`}>
+                  <div className="flex items-start gap-3">
+                    {restoreResult.success ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <p className={`font-semibold ${restoreResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                        {restoreResult.success ? 'Restauration réussie!' : 'Erreur de restauration'}
+                      </p>
+                      {restoreResult.success ? (
+                        <div className="text-sm text-green-700 dark:text-green-300 mt-2 space-y-1">
+                          <p>✅ {restoreResult.imported}/{restoreResult.total} enregistrements importés</p>
+                          {restoreResult.deleted > 0 && (
+                            <p>🗑️ {restoreResult.deleted} enregistrements supprimés</p>
+                          )}
+                          <p>⏱️ Durée: {restoreResult.duration}</p>
+                          {restoreResult.perTable && (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer font-medium">Détails par table</summary>
+                              <ul className="mt-2 space-y-1 pl-4">
+                                {Object.entries(restoreResult.perTable).map(([table, stats]: [string, any]) => (
+                                  <li key={table} className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">{stats.imported}/{stats.total}</Badge>
+                                    <span>{table}</span>
+                                    {stats.errors?.length > 0 && (
+                                      <Badge variant="destructive" className="text-xs">{stats.errors.length} erreurs</Badge>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-red-700 dark:text-red-300 mt-1">{restoreResult.error}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className={`border rounded-lg p-4 ${
+                restoreMode === 'replace' 
+                  ? 'bg-destructive/10 border-destructive/30' 
+                  : 'bg-primary/10 border-primary/30'
+              }`}>
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                  <AlertTriangle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
+                    restoreMode === 'replace' ? 'text-destructive' : 'text-primary'
+                  }`} />
                   <div>
-                    <p className="font-medium text-destructive">Avertissement Important</p>
-                    <p className="text-sm text-destructive/80">
-                      La restauration va <strong>remplacer toutes les données existantes</strong> par celles du fichier.
-                      Assurez-vous d'avoir une sauvegarde avant de continuer.
+                    <p className={`font-medium ${restoreMode === 'replace' ? 'text-destructive' : 'text-primary'}`}>
+                      {restoreMode === 'replace' ? 'Avertissement - Mode Remplacement' : 'Info - Mode Fusion'}
+                    </p>
+                    <p className={`text-sm ${restoreMode === 'replace' ? 'text-destructive/80' : 'text-primary/80'}`}>
+                      {restoreMode === 'replace' 
+                        ? 'Toutes les données existantes seront SUPPRIMÉES puis remplacées. Faites une sauvegarde avant!'
+                        : 'Les données seront mises à jour ou ajoutées sans supprimer les données existantes non concernées.'}
                     </p>
                   </div>
                 </div>
