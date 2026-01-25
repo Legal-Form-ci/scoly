@@ -9,7 +9,7 @@ verify_jwt = false
 [functions.check-payment-status]
 verify_jwt = false
 
-[functions.fedapay-webhook]
+[functions.kkiapay-webhook]
 verify_jwt = false
 
 [functions.send-article-notification]

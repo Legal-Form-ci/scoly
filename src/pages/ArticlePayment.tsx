@@ -131,7 +131,7 @@ const ArticlePayment = () => {
         .eq("id", user.id)
         .single();
 
-      // Initiate payment via FedaPay
+      // Initiate payment via KkiaPay
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         "process-payment",
         {
@@ -420,7 +420,7 @@ const ArticlePayment = () => {
 
                       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                         <Lock size={12} />
-                        Paiement sécurisé par FedaPay
+                        Paiement sécurisé par KkiaPay
                       </div>
                     </>
                   )}

@@ -44,7 +44,7 @@ const ScIA = () => {
     fr: {
       welcome: "Bonjour ! Je suis **ScIA**, votre assistant virtuel Izy-scoly. 🎓\n\nJe suis là pour vous aider avec :\n- 📚 Vos questions sur les produits\n- 🛒 Le suivi de vos commandes\n- 💳 Les méthodes de paiement\n- ✍️ La publication d'actualités\n- ❓ Toute autre question\n\nComment puis-je vous aider aujourd'hui ?",
       delivery: "📦 **Livraison gratuite partout en Côte d'Ivoire !**\n\n- Abidjan : 24-48h\n- Autres villes : 3-5 jours ouvrés\n\nVous recevrez un SMS de confirmation dès l'expédition de votre commande.",
-      payment: "💳 **Modes de paiement acceptés :**\n\n- 🟠 Orange Money\n- 🟡 MTN Mobile Money\n- 🔵 Moov Money\n- 🟢 Wave\n\nToutes les transactions sont 100% sécurisées via FedaPay.",
+      payment: "💳 **Modes de paiement acceptés :**\n\n- 🟠 Orange Money\n- 🟡 MTN Mobile Money\n- 🔵 Moov Money\n- 🟢 Wave\n\nToutes les transactions sont 100% sécurisées via KkiaPay.",
       order: "🛒 **Pour passer une commande :**\n\n1. Parcourez notre boutique\n2. Ajoutez des produits au panier\n3. Validez votre commande\n4. Payez via Mobile Money\n5. Recevez votre confirmation par SMS\n\nVous pouvez suivre votre commande dans 'Mon compte'.",
       article: "✍️ **Pour publier une actualité :**\n\n1. Connectez-vous à votre compte\n2. Accédez à l'Espace Auteur\n3. Créez votre article avec l'éditeur\n4. Soumettez pour révision\n\nNotre équipe examinera votre article sous 48h.",
       contact: "📞 **Nous contacter :**\n\n- WhatsApp : +225 07 59 56 60 87\n- Email : contact@izy-scoly.ci\n- Horaires : Lun-Ven 8h-18h\n\nJe reste également disponible 24/7 ici !",
@@ -71,7 +71,7 @@ const ScIA = () => {
     en: {
       welcome: "Hello! I'm **ScIA**, your Izy-scoly virtual assistant. 🎓\n\nI'm here to help you with:\n- 📚 Your questions about products\n- 🛒 Order tracking\n- 💳 Payment methods\n- ✍️ Publishing news\n- ❓ Any other questions\n\nHow can I help you today?",
       delivery: "📦 **Free delivery throughout Ivory Coast!**\n\n- Abidjan: 24-48h\n- Other cities: 3-5 business days\n\nYou'll receive an SMS confirmation once your order is shipped.",
-      payment: "💳 **Accepted payment methods:**\n\n- 🟠 Orange Money\n- 🟡 MTN Mobile Money\n- 🔵 Moov Money\n- 🟢 Wave\n\nAll transactions are 100% secure via FedaPay.",
+      payment: "💳 **Accepted payment methods:**\n\n- 🟠 Orange Money\n- 🟡 MTN Mobile Money\n- 🔵 Moov Money\n- 🟢 Wave\n\nAll transactions are 100% secure via KkiaPay.",
       order: "🛒 **To place an order:**\n\n1. Browse our shop\n2. Add products to cart\n3. Validate your order\n4. Pay via Mobile Money\n5. Receive your SMS confirmation\n\nYou can track your order in 'My Account'.",
       article: "✍️ **To publish news:**\n\n1. Log into your account\n2. Go to Author Space\n3. Create your article with the editor\n4. Submit for review\n\nOur team will review your article within 48h.",
       contact: "📞 **Contact us:**\n\n- WhatsApp: +225 07 59 56 60 87\n- Email: contact@izy-scoly.ci\n- Hours: Mon-Fri 8am-6pm\n\nI'm also available 24/7 here!",
@@ -98,7 +98,7 @@ const ScIA = () => {
     de: {
       welcome: "Hallo! Ich bin **ScIA**, Ihr virtueller Izy-scoly-Assistent. 🎓\n\nIch bin hier, um Ihnen zu helfen mit:\n- 📚 Ihren Fragen zu Produkten\n- 🛒 Bestellverfolgung\n- 💳 Zahlungsmethoden\n- ✍️ Nachrichten veröffentlichen\n- ❓ Allen anderen Fragen\n\nWie kann ich Ihnen heute helfen?",
       delivery: "📦 **Kostenlose Lieferung in der gesamten Elfenbeinküste!**\n\n- Abidjan: 24-48 Std.\n- Andere Städte: 3-5 Werktage\n\nSie erhalten eine SMS-Bestätigung, sobald Ihre Bestellung versandt wird.",
-      payment: "💳 **Akzeptierte Zahlungsmethoden:**\n\n- 🟠 Orange Money\n- 🟡 MTN Mobile Money\n- 🔵 Moov Money\n- 🟢 Wave\n\nAlle Transaktionen sind 100% sicher über FedaPay.",
+      payment: "💳 **Akzeptierte Zahlungsmethoden:**\n\n- 🟠 Orange Money\n- 🟡 MTN Mobile Money\n- 🔵 Moov Money\n- 🟢 Wave\n\nAlle Transaktionen sind 100% sicher über KkiaPay.",
       order: "🛒 **Um eine Bestellung aufzugeben:**\n\n1. Durchsuchen Sie unseren Shop\n2. Fügen Sie Produkte zum Warenkorb hinzu\n3. Bestätigen Sie Ihre Bestellung\n4. Zahlen Sie per Mobile Money\n5. Erhalten Sie Ihre SMS-Bestätigung\n\nSie können Ihre Bestellung in 'Mein Konto' verfolgen.",
       article: "✍️ **Um Nachrichten zu veröffentlichen:**\n\n1. Melden Sie sich in Ihrem Konto an\n2. Gehen Sie zum Autorenbereich\n3. Erstellen Sie Ihren Artikel mit dem Editor\n4. Senden Sie zur Überprüfung\n\nUnser Team wird Ihren Artikel innerhalb von 48 Stunden prüfen.",
       contact: "📞 **Kontaktieren Sie uns:**\n\n- WhatsApp: +225 07 59 56 60 87\n- E-Mail: contact@izy-scoly.ci\n- Öffnungszeiten: Mo-Fr 8-18 Uhr\n\nIch bin auch hier rund um die Uhr verfügbar!",
@@ -125,7 +125,7 @@ const ScIA = () => {
     es: {
       welcome: "¡Hola! Soy **ScIA**, tu asistente virtual de Izy-scoly. 🎓\n\nEstoy aquí para ayudarte con:\n- 📚 Tus preguntas sobre productos\n- 🛒 Seguimiento de pedidos\n- 💳 Métodos de pago\n- ✍️ Publicar noticias\n- ❓ Cualquier otra pregunta\n\n¿Cómo puedo ayudarte hoy?",
       delivery: "📦 **¡Entrega gratuita en toda Costa de Marfil!**\n\n- Abidjan: 24-48h\n- Otras ciudades: 3-5 días hábiles\n\nRecibirás una confirmación por SMS cuando se envíe tu pedido.",
-      payment: "💳 **Métodos de pago aceptados:**\n\n- 🟠 Orange Money\n- 🟡 MTN Mobile Money\n- 🔵 Moov Money\n- 🟢 Wave\n\nTodas las transacciones son 100% seguras a través de FedaPay.",
+      payment: "💳 **Métodos de pago aceptados:**\n\n- 🟠 Orange Money\n- 🟡 MTN Mobile Money\n- 🔵 Moov Money\n- 🟢 Wave\n\nTodas las transacciones son 100% seguras a través de KkiaPay.",
       order: "🛒 **Para hacer un pedido:**\n\n1. Explora nuestra tienda\n2. Añade productos al carrito\n3. Valida tu pedido\n4. Paga con Mobile Money\n5. Recibe tu confirmación por SMS\n\nPuedes seguir tu pedido en 'Mi Cuenta'.",
       article: "✍️ **Para publicar noticias:**\n\n1. Inicia sesión en tu cuenta\n2. Ve al Espacio de Autor\n3. Crea tu artículo con el editor\n4. Envía para revisión\n\nNuestro equipo revisará tu artículo en 48h.",
       contact: "📞 **Contáctanos:**\n\n- WhatsApp: +225 07 59 56 60 87\n- Email: contact@izy-scoly.ci\n- Horario: Lun-Vie 8am-6pm\n\n¡También estoy disponible 24/7 aquí!",

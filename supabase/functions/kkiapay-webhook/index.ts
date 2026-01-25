@@ -3,34 +3,29 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-fedapay-signature',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-kkiapay-signature',
 };
 
-interface FedaPayWebhookEvent {
-  id: string;
-  entity: string;
-  name: string;
-  object: {
-    id: number;
-    klass: string;
-    reference: string;
-    amount: number;
-    description: string;
+interface KkiaPayWebhookEvent {
+  event: string;
+  data: {
+    transactionId: string;
     status: string;
-    mode: string;
-    metadata?: {
-      order_id?: string;
-      payment_id?: string;
-      user_id?: string;
+    amount: number;
+    phone: string;
+    failureReason?: string;
+    externalTransactionId?: string;
+    paymentMethod?: string;
+    client?: {
+      name?: string;
+      email?: string;
+      phone?: string;
     };
-    customer?: {
-      id: number;
-      firstname: string;
-      lastname: string;
-      email: string;
+    custom_data?: {
+      orderId?: string;
+      paymentId?: string;
+      userId?: string;
     };
-    created_at: string;
-    updated_at: string;
   };
 }
 
@@ -47,29 +42,30 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse webhook payload
-    const payload: FedaPayWebhookEvent = await req.json();
+    const payload: KkiaPayWebhookEvent = await req.json();
     
-    console.log('FedaPay webhook received:', JSON.stringify(payload, null, 2));
+    console.log('KkiaPay webhook received:', JSON.stringify(payload, null, 2));
 
-    const { name: eventName, object: transaction } = payload;
-
-    // Extract metadata
-    const orderId = transaction.metadata?.order_id;
-    const paymentId = transaction.metadata?.payment_id;
-    const userId = transaction.metadata?.user_id;
-    const fedapayTransactionId = transaction.id.toString();
-    const fedapayReference = transaction.reference;
-    const amount = transaction.amount;
-    const status = transaction.status;
+    const { event: eventName, data: transactionData } = payload;
+    
+    // Handle both nested and flat structures
+    const transactionId = transactionData?.transactionId || (payload as any).transactionId;
+    const status = transactionData?.status || (payload as any).status;
+    const amount = transactionData?.amount || (payload as any).amount;
+    
+    // Get order/payment info from custom data or metadata
+    const customData = transactionData?.custom_data || (payload as any).custom_data || {};
+    const orderId = customData.orderId;
+    const paymentId = customData.paymentId;
+    const userId = customData.userId;
 
     console.log('Transaction details:', { 
       eventName, 
-      orderId, 
-      paymentId, 
+      transactionId,
       status, 
       amount,
-      fedapayTransactionId,
-      fedapayReference 
+      orderId,
+      paymentId
     });
 
     // Find the payment record
@@ -82,11 +78,11 @@ serve(async (req) => {
         .eq('id', paymentId)
         .single();
       paymentRecord = data;
-    } else if (fedapayReference) {
+    } else if (transactionId) {
       const { data } = await supabase
         .from('payments')
         .select('*')
-        .eq('transaction_id', fedapayReference)
+        .eq('transaction_id', transactionId)
         .single();
       paymentRecord = data;
     } else if (orderId) {
@@ -101,40 +97,53 @@ serve(async (req) => {
     }
 
     if (!paymentRecord) {
+      console.log('Payment record not found, checking recent pending payments by amount...');
+      
+      // Fallback: find recent pending payment with matching amount
+      if (amount) {
+        const { data } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('amount', amount)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        paymentRecord = data;
+      }
+    }
+
+    if (!paymentRecord) {
       console.error('Payment record not found for webhook');
       return new Response(
-        JSON.stringify({ error: 'Payment not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ received: true, message: 'Payment not found but acknowledged' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Map FedaPay status to our status
+    // Map KkiaPay status to our status
     let newStatus: string;
-    switch (status.toLowerCase()) {
-      case 'approved':
-      case 'transferred':
-        newStatus = 'completed';
-        break;
-      case 'pending':
-      case 'processing':
-        newStatus = 'pending';
-        break;
-      case 'declined':
-      case 'cancelled':
-      case 'refunded':
-        newStatus = 'failed';
-        break;
-      default:
-        newStatus = 'pending';
+    const statusLower = (status || '').toLowerCase();
+    
+    if (statusLower === 'success' || statusLower === 'approved' || statusLower === 'completed') {
+      newStatus = 'completed';
+    } else if (statusLower === 'pending' || statusLower === 'processing') {
+      newStatus = 'pending';
+    } else if (statusLower === 'failed' || statusLower === 'declined' || statusLower === 'cancelled') {
+      newStatus = 'failed';
+    } else {
+      newStatus = 'pending';
     }
 
     // Update payment status
     const updateData: Record<string, unknown> = {
       status: newStatus,
+      transaction_id: transactionId || paymentRecord.transaction_id,
       metadata: {
         ...paymentRecord.metadata,
-        fedapay_event: eventName,
-        fedapay_status: status,
+        kkiapay_event: eventName,
+        kkiapay_status: status,
+        kkiapay_transaction_id: transactionId,
         webhook_received_at: new Date().toISOString()
       }
     };
@@ -154,7 +163,10 @@ serve(async (req) => {
     if (newStatus === 'completed' && paymentRecord.order_id) {
       await supabase
         .from('orders')
-        .update({ status: 'confirmed' })
+        .update({ 
+          status: 'confirmed',
+          payment_reference: transactionId
+        })
         .eq('id', paymentRecord.order_id);
 
       console.log('Order confirmed:', paymentRecord.order_id);
@@ -169,14 +181,15 @@ serve(async (req) => {
         const notifications = admins.map(admin => ({
           user_id: admin.user_id,
           type: 'payment',
-          title: 'Paiement FedaPay confirmé',
-          message: `Paiement de ${amount} FCFA confirmé pour la commande #${paymentRecord.order_id.slice(0, 8)}`,
+          title: 'Paiement KkiaPay confirmé',
+          message: `Paiement de ${paymentRecord.amount?.toLocaleString()} FCFA confirmé pour la commande #${paymentRecord.order_id.slice(0, 8)}`,
           data: {
             payment_id: paymentRecord.id,
             order_id: paymentRecord.order_id,
-            amount: amount,
+            amount: paymentRecord.amount,
             payment_method: paymentRecord.payment_method,
-            provider: 'fedapay'
+            provider: 'kkiapay',
+            transaction_id: transactionId
           }
         }));
 
@@ -189,11 +202,12 @@ serve(async (req) => {
           user_id: paymentRecord.user_id,
           type: 'payment',
           title: 'Paiement réussi',
-          message: `Votre paiement de ${amount} FCFA a été confirmé. Votre commande est en cours de préparation.`,
+          message: `Votre paiement de ${paymentRecord.amount?.toLocaleString()} FCFA a été confirmé. Votre commande est en cours de préparation.`,
           data: {
             payment_id: paymentRecord.id,
             order_id: paymentRecord.order_id,
-            amount: amount
+            amount: paymentRecord.amount,
+            transaction_id: transactionId
           }
         });
       }
@@ -203,18 +217,19 @@ serve(async (req) => {
         user_id: paymentRecord.user_id,
         type: 'payment',
         title: 'Paiement échoué',
-        message: `Votre paiement de ${amount} FCFA a échoué. Veuillez réessayer.`,
+        message: `Votre paiement de ${paymentRecord.amount?.toLocaleString()} FCFA a échoué. Veuillez réessayer.`,
         data: {
           payment_id: paymentRecord.id,
           order_id: paymentRecord.order_id,
-          amount: amount,
-          reason: status
+          amount: paymentRecord.amount,
+          reason: transactionData?.failureReason || status
         }
       });
     }
 
     return new Response(
       JSON.stringify({ 
+        received: true, 
         success: true, 
         message: 'Webhook processed successfully',
         paymentId: paymentRecord.id,
@@ -224,11 +239,12 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error processing FedaPay webhook:', error);
+    console.error('Error processing KkiaPay webhook:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // Still return 200 to acknowledge receipt
     return new Response(
-      JSON.stringify({ error: 'Webhook processing failed', details: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ received: true, error: 'Webhook processing failed', details: errorMessage }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

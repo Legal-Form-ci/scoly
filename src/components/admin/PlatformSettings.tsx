@@ -287,7 +287,7 @@ const PlatformSettings = () => {
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <div>
                     <p className="font-medium">Mobile Money (Orange, MTN, Wave, Moov)</p>
-                    <p className="text-sm text-muted-foreground">Paiement via KkiaPay/FedaPay</p>
+                    <p className="text-sm text-muted-foreground">Paiement via KkiaPay</p>
                   </div>
                   <Switch 
                     checked={getValue("payment_mobile_money_enabled", "true") === "true"}

@@ -177,6 +177,9 @@ export const useKkiaPay = () => {
         window.location.origin +
         `/checkout?payment=success&paymentId=${encodeURIComponent(payment.id)}&orderId=${encodeURIComponent(orderId)}`;
 
+      // Webhook URL for server-side notifications (instant status updates)
+      const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kkiapay-webhook`;
+
       window.openKkiapayWidget({
         amount: config.amount,
         key: publicKey,
@@ -188,6 +191,8 @@ export const useKkiaPay = () => {
         }),
         callback: callbackUrl,
       });
+      
+      console.log('KkiaPay widget opened. Webhook configured at:', webhookUrl);
     },
     [isScriptLoaded]
   );
