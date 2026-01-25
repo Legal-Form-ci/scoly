@@ -19,6 +19,33 @@ export const useLoginSecurity = () => {
     return `${device} sur ${platform}`;
   }, []);
 
+  // Send push notification for login attempt
+  const sendLoginPushNotification = useCallback(async (userId: string, deviceInfo: string, ipAddress: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          user_id: userId,
+          title: 'Nouvelle connexion détectée',
+          body: `Une connexion a été détectée depuis ${deviceInfo}. Est-ce vous ?`,
+          data: {
+            type: 'security',
+            requires_confirmation: true,
+            device_info: deviceInfo,
+            ip_address: ipAddress
+          }
+        }
+      });
+
+      if (error) {
+        console.error('[Push] Error sending login notification:', error);
+      } else {
+        console.log('[Push] Login notification sent:', data);
+      }
+    } catch (error) {
+      console.error('[Push] Failed to send login notification:', error);
+    }
+  }, []);
+
   // Record login session
   const recordLoginSession = useCallback(async (userId: string) => {
     try {
@@ -44,11 +71,14 @@ export const useLoginSecurity = () => {
 
       if (error) {
         console.error('Error recording login session:', error);
+      } else {
+        // Send push notification after recording session
+        await sendLoginPushNotification(userId, deviceInfo, ipAddress);
       }
     } catch (error) {
       console.error('Error in recordLoginSession:', error);
     }
-  }, [getDeviceInfo]);
+  }, [getDeviceInfo, sendLoginPushNotification]);
 
   // Check for blocked sessions
   const checkBlockedSessions = useCallback(async () => {
@@ -101,6 +131,7 @@ export const useLoginSecurity = () => {
     recordLoginSession,
     checkBlockedSessions,
     getPendingConfirmations,
-    getDeviceInfo
+    getDeviceInfo,
+    sendLoginPushNotification
   };
 };

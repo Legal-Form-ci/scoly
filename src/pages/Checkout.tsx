@@ -160,7 +160,7 @@ const Checkout = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Load user profile data
+  // Load user profile data and check for loyalty coupons
   useEffect(() => {
     if (user) {
       const loadProfile = async () => {
@@ -183,6 +183,61 @@ const Checkout = () => {
       loadProfile();
     }
   }, [user]);
+
+  // Auto-apply loyalty coupon if available
+  useEffect(() => {
+    if (!user || appliedCoupon || total <= 0) return;
+
+    const checkLoyaltyCoupons = async () => {
+      try {
+        // Get unused loyalty rewards with coupon codes
+        const { data: rewards, error } = await supabase
+          .from('loyalty_rewards')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_used', false)
+          .not('coupon_code', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (error || !rewards || rewards.length === 0) return;
+
+        const reward = rewards[0];
+        
+        // Check if expired
+        if (reward.expires_at && new Date(reward.expires_at) < new Date()) {
+          return;
+        }
+
+        // Try to validate and apply the loyalty coupon
+        const { data: couponData, error: couponError } = await supabase.rpc('validate_coupon', {
+          _code: reward.coupon_code,
+          _order_total: total
+        });
+
+        if (couponError || !couponData || couponData.length === 0) {
+          console.log('[Checkout] Loyalty coupon not valid for this order');
+          return;
+        }
+
+        const validCoupon = couponData[0];
+        setAppliedCoupon({
+          id: validCoupon.coupon_id,
+          code: reward.coupon_code,
+          discount: validCoupon.discount_value
+        });
+        
+        toast({
+          title: "Coupon fidélité appliqué !",
+          description: `Votre récompense de ${validCoupon.discount_value.toLocaleString()} FCFA a été automatiquement appliquée.`,
+        });
+      } catch (error) {
+        console.error('[Checkout] Error checking loyalty coupons:', error);
+      }
+    };
+
+    checkLoyaltyCoupons();
+  }, [user, total, appliedCoupon, toast]);
 
   const getLocalizedName = (product: any) => {
     if (!product) return '';
@@ -327,6 +382,15 @@ const Checkout = () => {
           .from('coupons')
           .update({ used_count: (currentCoupon?.used_count || 0) + 1 })
           .eq('id', appliedCoupon.id);
+        
+        // Mark loyalty reward as used if it's a loyalty coupon
+        if (appliedCoupon.code.startsWith('LOYALTY-')) {
+          await supabase
+            .from('loyalty_rewards')
+            .update({ is_used: true, used_at: new Date().toISOString() })
+            .eq('coupon_code', appliedCoupon.code)
+            .eq('user_id', user.id);
+        }
       }
 
       // Create order items
