@@ -731,6 +731,42 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_rewards: {
+        Row: {
+          coupon_code: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_used: boolean
+          points_spent: number
+          reward_type: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_code?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          points_spent: number
+          reward_type: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_code?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          points_spent?: number
+          reward_type?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -1518,6 +1554,14 @@ export type Database = {
           whatsapp: number
         }[]
       }
+      get_user_loyalty_points: {
+        Args: never
+        Returns: {
+          available: number
+          total_earned: number
+          total_spent: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1543,6 +1587,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      redeem_loyalty_points: {
+        Args: { _points_required: number; _reward_type: string }
+        Returns: {
+          coupon_code: string
+          message: string
+          reward_id: string
+          success: boolean
+        }[]
       }
       validate_coupon: {
         Args: { _code: string; _order_total: number }
