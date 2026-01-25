@@ -65,6 +65,16 @@ interface Address {
   isDefault: boolean;
 }
 
+interface LoyaltyReward {
+  id: string;
+  reward_type: string;
+  points_spent: number;
+  coupon_code: string;
+  is_used: boolean;
+  expires_at: string;
+  created_at: string;
+}
+
 const Account = () => {
   const { t, language, setLanguage } = useLanguage();
   const { user, signOut } = useAuth();
@@ -84,6 +94,8 @@ const Account = () => {
   const [saving, setSaving] = useState(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [loyaltyRewards, setLoyaltyRewards] = useState<LoyaltyReward[]>([]);
+  const [redeemingReward, setRedeemingReward] = useState<string | null>(null);
   const [newAddress, setNewAddress] = useState({
     name: '',
     address: '',
@@ -144,10 +156,25 @@ const Account = () => {
       if (error) throw error;
       setOrders(data || []);
       
-      // Calculate loyalty points (1 point per 1000 FCFA spent on delivered orders)
-      const deliveredOrders = (data || []).filter(o => o.status === 'delivered');
-      const totalSpent = deliveredOrders.reduce((acc, o) => acc + o.total_amount, 0);
-      setLoyaltyPoints(Math.floor(totalSpent / 1000));
+      // Fetch loyalty points from database function
+      const { data: pointsData } = await supabase.rpc('get_user_loyalty_points');
+      if (pointsData && pointsData[0]) {
+        setLoyaltyPoints(pointsData[0].available || 0);
+      } else {
+        // Fallback calculation
+        const deliveredOrders = (data || []).filter(o => o.status === 'delivered');
+        const totalSpent = deliveredOrders.reduce((acc, o) => acc + o.total_amount, 0);
+        setLoyaltyPoints(Math.floor(totalSpent / 1000));
+      }
+
+      // Fetch user's loyalty rewards
+      const { data: rewards } = await supabase
+        .from('loyalty_rewards')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      setLoyaltyRewards(rewards || []);
 
       // Fetch order items for each order
       for (const order of data || []) {
@@ -224,6 +251,53 @@ const Account = () => {
       );
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleRedeemReward = async (rewardType: string, pointsRequired: number, rewardName: string) => {
+    if (redeemingReward) return;
+    if (loyaltyPoints < pointsRequired) {
+      toast({
+        title: "Points insuffisants",
+        description: `Vous avez besoin de ${pointsRequired} points pour cette récompense.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRedeemingReward(rewardType);
+    try {
+      const { data, error } = await supabase.rpc('redeem_loyalty_points', {
+        _reward_type: rewardType,
+        _points_required: pointsRequired
+      });
+
+      if (error) throw error;
+
+      const result = data?.[0];
+      if (result?.success) {
+        toast({
+          title: "Récompense échangée !",
+          description: `${rewardName} - Code: ${result.coupon_code}`,
+        });
+        // Refresh data
+        fetchOrders();
+      } else {
+        toast({
+          title: "Échec de l'échange",
+          description: result?.message || "Une erreur est survenue",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error redeeming reward:', error);
+      toast({
+        title: t.common.error,
+        description: t.common.tryAgain,
+        variant: "destructive",
+      });
+    } finally {
+      setRedeemingReward(null);
     }
   };
 
@@ -764,8 +838,13 @@ const Account = () => {
                           <p className="font-medium">-5% sur la prochaine commande</p>
                           <p className="text-xs text-muted-foreground">50 points requis</p>
                         </div>
-                        <Button size="sm" variant="outline" disabled={loyaltyPoints < 50}>
-                          Échanger
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          disabled={loyaltyPoints < 50 || redeemingReward === 'discount_5'}
+                          onClick={() => handleRedeemReward('discount_5', 50, '-5% sur la prochaine commande')}
+                        >
+                          {redeemingReward === 'discount_5' ? 'Échange...' : 'Échanger'}
                         </Button>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -773,8 +852,13 @@ const Account = () => {
                           <p className="font-medium">Livraison express gratuite</p>
                           <p className="text-xs text-muted-foreground">100 points requis</p>
                         </div>
-                        <Button size="sm" variant="outline" disabled={loyaltyPoints < 100}>
-                          Échanger
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          disabled={loyaltyPoints < 100 || redeemingReward === 'free_shipping'}
+                          onClick={() => handleRedeemReward('free_shipping', 100, 'Livraison express gratuite')}
+                        >
+                          {redeemingReward === 'free_shipping' ? 'Échange...' : 'Échanger'}
                         </Button>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -782,12 +866,50 @@ const Account = () => {
                           <p className="font-medium">-10% sur votre commande</p>
                           <p className="text-xs text-muted-foreground">200 points requis</p>
                         </div>
-                        <Button size="sm" variant="outline" disabled={loyaltyPoints < 200}>
-                          Échanger
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          disabled={loyaltyPoints < 200 || redeemingReward === 'discount_10'}
+                          onClick={() => handleRedeemReward('discount_10', 200, '-10% sur votre commande')}
+                        >
+                          {redeemingReward === 'discount_10' ? 'Échange...' : 'Échanger'}
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Mes récompenses échangées */}
+                  {loyaltyRewards.length > 0 && (
+                    <Card className="md:col-span-2">
+                      <CardHeader>
+                        <CardTitle>Mes récompenses échangées</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {loyaltyRewards.map((reward) => (
+                            <div key={reward.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                              <div>
+                                <p className="font-medium">
+                                  {reward.reward_type === 'discount_5' && '-5% sur commande'}
+                                  {reward.reward_type === 'free_shipping' && 'Livraison gratuite'}
+                                  {reward.reward_type === 'discount_10' && '-10% sur commande'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Code: <span className="font-mono font-semibold">{reward.coupon_code}</span>
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Expire le: {new Date(reward.expires_at).toLocaleDateString('fr-FR')}
+                                </p>
+                              </div>
+                              <Badge variant={reward.is_used ? "secondary" : "default"}>
+                                {reward.is_used ? "Utilisé" : "Actif"}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </div>
             </TabsContent>

@@ -284,36 +284,45 @@ const UserManagement = () => {
       }
 
       // Update roles - delete existing and insert new
-      const { error: deleteError } = await supabase
+      console.log('Deleting existing roles for user:', editingUser.id);
+      const { error: deleteError, count: deleteCount } = await supabase
         .from("user_roles")
         .delete()
         .eq("user_id", editingUser.id);
 
       if (deleteError) {
-        toast.error(t.error);
+        console.error('Error deleting roles:', deleteError);
+        toast.error(t.error + ': ' + deleteError.message);
         return;
       }
+      console.log('Deleted roles count:', deleteCount);
 
-      if (formData.roles.length > 0) {
-        const validDbRoles = formData.roles.filter((role) =>
-          ["admin", "moderator", "user", "vendor", "delivery"].includes(role)
-        );
+      // Always insert at least one role (default to 'user' if none selected)
+      const rolesToInsert = formData.roles.length > 0 ? formData.roles : ['user'];
+      const validDbRoles = rolesToInsert.filter((role) =>
+        ["admin", "moderator", "user", "vendor", "delivery"].includes(role)
+      );
 
-        const roleInserts = validDbRoles.map((role) => ({
-          user_id: editingUser.id,
-          role: role as "admin" | "moderator" | "user" | "vendor" | "delivery",
-        }));
+      console.log('Roles to insert:', validDbRoles);
 
-        if (roleInserts.length > 0) {
-          const { error: insertError } = await supabase
-            .from("user_roles")
-            .insert(roleInserts as any);
+      const roleInserts = validDbRoles.map((role) => ({
+        user_id: editingUser.id,
+        role: role as "admin" | "moderator" | "user" | "vendor" | "delivery",
+      }));
 
-          if (insertError) {
-            toast.error(t.error);
-            return;
-          }
+      if (roleInserts.length > 0) {
+        console.log('Inserting roles:', roleInserts);
+        const { error: insertError, data: insertedRoles } = await supabase
+          .from("user_roles")
+          .insert(roleInserts)
+          .select();
+
+        if (insertError) {
+          console.error('Error inserting roles:', insertError);
+          toast.error(t.error + ': ' + insertError.message);
+          return;
         }
+        console.log('Inserted roles:', insertedRoles);
       }
 
       toast.success(t.userUpdated);
