@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Star, ShoppingCart, Heart, ChevronLeft, ChevronRight, Minus, Plus, Share2, Truck, Shield, RotateCcw } from "lucide-react";
+import { Star, ShoppingCart, Heart, Minus, Plus, Share2, Truck, Shield, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import SmartImage from "@/components/SmartImage";
+import ProductImageGallery from "@/components/ProductImageGallery";
 
 interface Product {
   id: string;
@@ -57,7 +57,6 @@ const ProductDetail = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
 
@@ -180,11 +179,13 @@ const ProductDetail = () => {
     ? reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length
     : 0;
 
-  const allImages = product?.images?.length 
-    ? product.images 
-    : product?.image_url 
-      ? [product.image_url] 
-      : ["/placeholder.svg"];
+  // Build images array for gallery
+  const allImages: string[] = [];
+  if (product?.images?.length) {
+    allImages.push(...product.images);
+  } else if (product?.image_url) {
+    allImages.push(product.image_url);
+  }
 
   if (loading) {
     return (
@@ -231,52 +232,16 @@ const ProductDetail = () => {
           </nav>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-            {/* Image Gallery */}
-            <div className="space-y-4">
-              <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden">
-                <SmartImage
-                  src={allImages[selectedImage]}
-                  alt={getLocalizedName(product)}
-                  className="w-full h-full object-cover"
-                  fallbackSrc="/placeholder.svg"
-                />
-                {allImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setSelectedImage((prev) => (prev > 0 ? prev - 1 : allImages.length - 1))}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-background/80 rounded-full flex items-center justify-center hover:bg-background transition-colors"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <button
-                      onClick={() => setSelectedImage((prev) => (prev < allImages.length - 1 ? prev + 1 : 0))}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-background/80 rounded-full flex items-center justify-center hover:bg-background transition-colors"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  </>
-                )}
-                {product.discount_percent && product.discount_percent > 0 && (
-                  <Badge className="absolute top-4 left-4 bg-destructive text-destructive-foreground">
-                    -{product.discount_percent}%
-                  </Badge>
-                )}
-              </div>
-              
-              {allImages.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto">
-                  {allImages.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                        selectedImage === index ? "border-primary" : "border-transparent"
-                      }`}
-                    >
-                      <SmartImage src={img} alt="" className="w-full h-full object-cover" fallbackSrc="/placeholder.svg" />
-                    </button>
-                  ))}
-                </div>
+            {/* Image Gallery - Using the dedicated component */}
+            <div>
+              <ProductImageGallery 
+                images={allImages} 
+                productName={getLocalizedName(product)} 
+              />
+              {product.discount_percent && product.discount_percent > 0 && (
+                <Badge className="absolute top-4 left-4 bg-destructive text-destructive-foreground z-10">
+                  -{product.discount_percent}%
+                </Badge>
               )}
             </div>
 
@@ -290,21 +255,23 @@ const ProductDetail = () => {
                 {getLocalizedName(product)}
               </h1>
 
-              {/* Rating */}
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      size={20}
-                      className={star <= averageRating ? "fill-accent text-accent" : "text-muted"}
-                    />
-                  ))}
+              {/* Rating - Only show if there are real reviews */}
+              {reviews.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={20}
+                        className={star <= averageRating ? "fill-accent text-accent" : "text-muted"}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-muted-foreground">
+                    ({reviews.length} {t.shop.reviews})
+                  </span>
                 </div>
-                <span className="text-muted-foreground">
-                  ({reviews.length} {t.shop.reviews})
-                </span>
-              </div>
+              )}
 
               {/* Price */}
               <div className="flex items-baseline gap-3">
@@ -472,10 +439,12 @@ const ProductDetail = () => {
                           </div>
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          {new Date(review.created_at || "").toLocaleDateString()}
+                          {review.created_at && new Date(review.created_at).toLocaleDateString("fr-FR")}
                         </span>
                       </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
+                      {review.comment && (
+                        <p className="text-muted-foreground">{review.comment}</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -485,37 +454,34 @@ const ProductDetail = () => {
 
           {/* Related Products */}
           {relatedProducts.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-display font-bold text-foreground mb-8">
-                {t.shop.relatedProducts}
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {relatedProducts.map((relProduct) => (
+            <div>
+              <h2 className="text-2xl font-display font-bold mb-6">Produits similaires</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                {relatedProducts.map((p) => (
                   <Link
-                    key={relProduct.id}
-                    to={`/product/${relProduct.id}`}
-                    className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all"
+                    key={p.id}
+                    to={`/product/${p.id}`}
+                    className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow"
                   >
                     <div className="aspect-square bg-muted overflow-hidden">
-                      <SmartImage
-                        src={relProduct.image_url}
-                        alt={getLocalizedName(relProduct)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        fallbackSrc="/placeholder.svg"
+                      <img
+                        src={p.image_url || "/placeholder.svg"}
+                        alt={getLocalizedName(p)}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
                     </div>
                     <div className="p-4">
-                      <h3 className="font-medium text-foreground mb-2 line-clamp-2">
-                        {getLocalizedName(relProduct)}
+                      <h3 className="font-medium text-foreground line-clamp-2 mb-2">
+                        {getLocalizedName(p)}
                       </h3>
-                      <p className="font-bold text-primary">
-                        {relProduct.price.toLocaleString()} {t.common.currency}
+                      <p className="text-primary font-bold">
+                        {p.price.toLocaleString()} {t.common.currency}
                       </p>
                     </div>
                   </Link>
                 ))}
               </div>
-            </section>
+            </div>
           )}
         </div>
       </div>

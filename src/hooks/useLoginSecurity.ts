@@ -19,19 +19,41 @@ export const useLoginSecurity = () => {
     return `${device} sur ${platform}`;
   }, []);
 
-  // Generate a unique device fingerprint
+  // Generate a unique device fingerprint - more robust version
   const getDeviceFingerprint = useCallback(() => {
     const ua = navigator.userAgent;
     const platform = navigator.platform;
     const language = navigator.language;
     const screen = `${window.screen.width}x${window.screen.height}`;
-    // Create a simple hash-like string for this device
-    const fingerprint = btoa(`${ua}|${platform}|${language}|${screen}`).slice(0, 32);
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const colorDepth = window.screen.colorDepth;
+    
+    // Create a more unique hash-like string for this device
+    const fingerprint = btoa(`${ua}|${platform}|${language}|${screen}|${timezone}|${colorDepth}`).slice(0, 48);
     return fingerprint;
   }, []);
 
+  // Store fingerprint in localStorage on login
+  const storeDeviceFingerprint = useCallback(() => {
+    const fingerprint = getDeviceFingerprint();
+    localStorage.setItem('device_fingerprint', fingerprint);
+    localStorage.setItem('device_fingerprint_timestamp', Date.now().toString());
+    return fingerprint;
+  }, [getDeviceFingerprint]);
+
+  // Get stored fingerprint
+  const getStoredFingerprint = useCallback(() => {
+    return localStorage.getItem('device_fingerprint') || '';
+  }, []);
+
   // Send push notification to OTHER devices (not the current one)
-  const sendLoginPushNotification = useCallback(async (userId: string, deviceInfo: string, ipAddress: string, currentDeviceFingerprint: string) => {
+  const sendLoginPushNotification = useCallback(async (
+    userId: string, 
+    deviceInfo: string, 
+    ipAddress: string, 
+    currentDeviceFingerprint: string,
+    sessionId: string
+  ) => {
     try {
       // Get all push subscriptions for this user
       const { data: subscriptions, error: subError } = await supabase
@@ -61,7 +83,9 @@ export const useLoginSecurity = () => {
           requires_confirmation: true,
           device_info: deviceInfo,
           ip_address: ipAddress,
-          origin_device_fingerprint: currentDeviceFingerprint // The device that triggered this
+          origin_device_fingerprint: currentDeviceFingerprint, // The device that triggered this
+          session_id: sessionId, // For blocking
+          created_at: new Date().toISOString()
         },
         is_read: false
       });
@@ -69,7 +93,7 @@ export const useLoginSecurity = () => {
       if (notifError) {
         console.error('[Push] Error storing notification:', notifError);
       } else {
-        console.log('[Push] Login notification created for other devices');
+        console.log('[Push] Login notification created for other devices (excluding current)');
       }
     } catch (error) {
       console.error('[Push] Failed to send login notification:', error);
@@ -80,10 +104,9 @@ export const useLoginSecurity = () => {
   const recordLoginSession = useCallback(async (userId: string) => {
     try {
       const deviceInfo = getDeviceInfo();
-      const deviceFingerprint = getDeviceFingerprint();
       
-      // Store fingerprint in localStorage so we can identify this device later
-      localStorage.setItem('device_fingerprint', deviceFingerprint);
+      // Store AND get the fingerprint for this device
+      const deviceFingerprint = storeDeviceFingerprint();
       
       // Get IP from a service (in production, this would be from the server)
       let ipAddress = 'Non disponible';
@@ -95,24 +118,35 @@ export const useLoginSecurity = () => {
         console.log('Could not fetch IP');
       }
 
-      const { error } = await supabase
+      // Create login session
+      const { data: sessionData, error } = await supabase
         .from('login_sessions')
         .insert({
           user_id: userId,
           device_info: deviceInfo,
           ip_address: ipAddress
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error recording login session:', error);
-      } else {
-        // Send push notification to OTHER devices only
-        await sendLoginPushNotification(userId, deviceInfo, ipAddress, deviceFingerprint);
+        return;
       }
+
+      // Send push notification to OTHER devices only (not current)
+      await sendLoginPushNotification(
+        userId, 
+        deviceInfo, 
+        ipAddress, 
+        deviceFingerprint,
+        sessionData.id
+      );
+      
     } catch (error) {
       console.error('Error in recordLoginSession:', error);
     }
-  }, [getDeviceInfo, getDeviceFingerprint, sendLoginPushNotification]);
+  }, [getDeviceInfo, storeDeviceFingerprint, sendLoginPushNotification]);
 
   // Check for blocked sessions
   const checkBlockedSessions = useCallback(async () => {
@@ -136,11 +170,11 @@ export const useLoginSecurity = () => {
     }
   }, [user]);
 
-  // Get pending confirmation sessions
+  // Get pending confirmation sessions (for OTHER devices only)
   const getPendingConfirmations = useCallback(async () => {
     if (!user) return [];
 
-    const currentFingerprint = localStorage.getItem('device_fingerprint') || '';
+    const currentFingerprint = getStoredFingerprint();
 
     try {
       const { data, error } = await supabase
@@ -170,7 +204,54 @@ export const useLoginSecurity = () => {
       console.error('Error getting pending confirmations:', error);
       return [];
     }
-  }, [user]);
+  }, [user, getStoredFingerprint]);
+
+  // Block a login session (called when user clicks "Not me")
+  const blockLoginSession = useCallback(async (sessionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('login_sessions')
+        .update({
+          is_blocked: true,
+          is_confirmed: false,
+          confirmed_at: new Date().toISOString()
+        })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error blocking session:', error);
+      return false;
+    }
+  }, []);
+
+  // Confirm a login session (called when user clicks "Yes, it's me")
+  const confirmLoginSession = useCallback(async (sessionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('login_sessions')
+        .update({
+          is_confirmed: true,
+          is_blocked: false,
+          confirmed_at: new Date().toISOString()
+        })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error confirming session:', error);
+      return false;
+    }
+  }, []);
+
+  // Add device to trusted devices
+  const trustDevice = useCallback(async (sessionId: string) => {
+    // In a full implementation, you'd store trusted device fingerprints
+    // For now, we just mark the session as confirmed
+    return confirmLoginSession(sessionId);
+  }, [confirmLoginSession]);
 
   return {
     recordLoginSession,
@@ -178,6 +259,11 @@ export const useLoginSecurity = () => {
     getPendingConfirmations,
     getDeviceInfo,
     getDeviceFingerprint,
-    sendLoginPushNotification
+    getStoredFingerprint,
+    storeDeviceFingerprint,
+    sendLoginPushNotification,
+    blockLoginSession,
+    confirmLoginSession,
+    trustDevice
   };
 };
