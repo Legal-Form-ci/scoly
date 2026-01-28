@@ -48,14 +48,24 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
     localStorage.setItem(POPUP_STORAGE_KEY, new Date().toISOString());
   };
 
+  // Close on backdrop click
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleClose();
+  };
+
   return (
     <AnimatePresence>
       {isVisible && (
         <>
           {/* Backdrop - Fullscreen overlay */}
-          <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={handleClose}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm cursor-pointer"
+            onClick={handleBackdropClick}
             style={{ 
               position: 'fixed',
               top: 0,
@@ -93,13 +103,18 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
                   <div className="absolute -left-10 -top-10 w-32 h-32 bg-white/10 rounded-full" />
                   <div className="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full" />
                   
-                  {/* Close button */}
+                  {/* Close button - FIXED */}
                   <button
-                    onClick={handleClose}
-                    className="absolute top-2 right-2 sm:top-3 sm:right-3 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors z-10"
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleClose();
+                    }}
+                    className="absolute top-2 right-2 sm:top-3 sm:right-3 p-2 rounded-full bg-white/20 hover:bg-white/40 transition-colors z-20 cursor-pointer"
                     aria-label="Fermer"
                   >
-                    <X size={18} className="text-white" />
+                    <X size={20} className="text-white" />
                   </button>
 
                   {/* Icon and Title */}
@@ -173,9 +188,14 @@ export const FreeShippingPopup = forwardRef<HTMLDivElement>((_, ref) => {
                       </Button>
                     </Link>
                     <Button
+                      type="button"
                       variant="outline"
                       className="h-10 sm:h-11 text-xs sm:text-sm"
-                      onClick={handleClose}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleClose();
+                      }}
                     >
                       Plus tard
                     </Button>

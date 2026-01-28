@@ -60,7 +60,7 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-      {/* Background */}
+      {/* Background - Solid color, no gradient */}
       <div className="absolute inset-0 bg-primary" />
 
       {/* Decorative Elements */}
@@ -80,11 +80,12 @@ const HeroSection = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            {/* LEFT */}
-            <div className="text-center lg:text-left">
+          {/* NEW LAYOUT: Hero Advertisements on TOP RIGHT as requested */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
+            {/* LEFT: Main Content */}
+            <div className="text-center lg:text-left order-2 lg:order-1">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-8 animate-slide-up">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-6 animate-slide-up">
                 <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
                 <span className="text-primary-foreground/90 text-sm font-medium">
                   Fournitures scolaires et bureautiques 📚
@@ -92,19 +93,19 @@ const HeroSection = () => {
               </div>
 
               {/* Heading */}
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 animate-slide-up animation-delay-100 leading-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 animate-slide-up animation-delay-100 leading-tight">
                 {t.hero.title1}
                 <span className="block mt-2 text-accent">{t.hero.title2}</span>
               </h1>
 
               {/* Subheading */}
-              <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-2xl mx-auto lg:mx-0 mb-10 animate-slide-up animation-delay-200 leading-relaxed">
+              <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-2xl mx-auto lg:mx-0 mb-8 animate-slide-up animation-delay-200 leading-relaxed">
                 Votre référence en Côte d'Ivoire pour les fournitures scolaires et bureautiques de qualité,
                 livrées gratuitement partout.
               </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4 mb-10 animate-slide-up animation-delay-300">
+              <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4 mb-8 animate-slide-up animation-delay-300">
                 <Link to="/shop" className="w-full sm:w-auto">
                   <Button variant="accent" size="xl" className="w-full sm:w-auto">
                     <ShoppingBag size={20} />
@@ -120,14 +121,14 @@ const HeroSection = () => {
               </div>
 
               {/* Categories - Quick access */}
-              <div className="mb-10 animate-slide-up animation-delay-400">
-                <p className="text-primary-foreground/70 text-sm mb-4">Parcourir par catégorie :</p>
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-stretch sm:items-center justify-center lg:justify-start gap-3">
+              <div className="mb-8 animate-slide-up animation-delay-400">
+                <p className="text-primary-foreground/70 text-sm mb-3">Parcourir par catégorie :</p>
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-stretch sm:items-center justify-center lg:justify-start gap-2">
                   {scolyCategories.map((category) => (
                     <Link
                       key={category.slug}
                       to={`/shop?category=${category.slug}`}
-                      className={`px-4 py-2 rounded-full ${toneClasses[category.tone]} backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03] text-center`}
+                      className={`px-3 py-1.5 rounded-full ${toneClasses[category.tone]} backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03] text-center`}
                     >
                       {category.name}
                     </Link>
@@ -136,24 +137,24 @@ const HeroSection = () => {
               </div>
 
               {/* Feature Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up animation-delay-500">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up animation-delay-500">
                 <FeatureCard
-                  icon={<ShoppingBag size={28} />}
+                  icon={<ShoppingBag size={24} />}
                   title="Catalogue"
-                  description={`${formatNumber(stats.products)} produits disponibles`}
+                  description={`${formatNumber(stats.products)} produits`}
                   color="bg-primary-foreground/10"
                   href="/shop"
                 />
                 <FeatureCard
-                  icon={<Truck size={28} />}
+                  icon={<Truck size={24} />}
                   title="Livraison gratuite"
                   description="Sur toutes vos commandes"
                   color="bg-secondary/20"
                   href="/shop"
                 />
                 <FeatureCard
-                  icon={<Newspaper size={28} />}
-                  title="Actualités Izy-Scoly"
+                  icon={<Newspaper size={24} />}
+                  title="Actualités"
                   description={`${formatNumber(stats.articles)} publications`}
                   color="bg-accent/20"
                   href="/actualites"
@@ -161,8 +162,8 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* RIGHT: Dynamic Advertisements */}
-            <div className="animate-slide-up animation-delay-200">
+            {/* RIGHT: Dynamic Advertisements - MOVED TO TOP */}
+            <div className="animate-slide-up animation-delay-100 order-1 lg:order-2 lg:sticky lg:top-24">
               <HeroAdvertisements />
             </div>
           </div>
@@ -194,18 +195,18 @@ const FeatureCard = ({ icon, title, description, color, href }: FeatureCardProps
   return (
     <Link
       to={href}
-      className={`group relative p-6 rounded-2xl ${color} backdrop-blur-sm border border-primary-foreground/10 hover:border-primary-foreground/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}
+      className={`group relative p-4 rounded-xl ${color} backdrop-blur-sm border border-primary-foreground/10 hover:border-primary-foreground/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}
     >
-      <div className="flex flex-col items-center text-center gap-3">
-        <div className="p-3 rounded-xl bg-primary-foreground/10 text-primary-foreground group-hover:bg-primary-foreground/20 transition-colors">
+      <div className="flex flex-col items-center text-center gap-2">
+        <div className="p-2 rounded-lg bg-primary-foreground/10 text-primary-foreground group-hover:bg-primary-foreground/20 transition-colors">
           {icon}
         </div>
-        <h3 className="text-lg font-display font-semibold text-primary-foreground">{title}</h3>
-        <p className="text-sm text-primary-foreground/80">{description}</p>
+        <h3 className="text-base font-display font-semibold text-primary-foreground">{title}</h3>
+        <p className="text-xs text-primary-foreground/80">{description}</p>
       </div>
       <ArrowRight
-        size={18}
-        className="absolute top-4 right-4 text-primary-foreground/50 group-hover:text-primary-foreground group-hover:translate-x-1 transition-all"
+        size={16}
+        className="absolute top-3 right-3 text-primary-foreground/50 group-hover:text-primary-foreground group-hover:translate-x-1 transition-all"
       />
     </Link>
   );
