@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, Send, ArrowLeft } from "lucide-react";
+import { Save, Send, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,9 +11,11 @@ import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MediaUpload from "@/components/MediaUpload";
+import RichTextEditor from "@/components/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAutoTranslate } from "@/hooks/useAutoTranslate";
 
 interface MediaItem {
   url: string;
@@ -25,6 +27,7 @@ const WriteArticle = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { id } = useParams();
+  const { translateDebounced, translating } = useAutoTranslate();
   
   const [loading, setLoading] = useState(false);
   const [fetchingArticle, setFetchingArticle] = useState(!!id);
@@ -35,6 +38,8 @@ const WriteArticle = () => {
     title_es: "",
     content_fr: "",
     content_en: "",
+    content_de: "",
+    content_es: "",
     excerpt_fr: "",
     excerpt_en: "",
     category: "general",
@@ -59,6 +64,22 @@ const WriteArticle = () => {
     }
   }, [id, user]);
 
+  // Auto-translate title when French title changes
+  const handleTitleChange = (value: string) => {
+    setForm(prev => ({ ...prev, title_fr: value }));
+    
+    if (value.length > 3) {
+      translateDebounced(value, (translations) => {
+        setForm(prev => ({
+          ...prev,
+          title_en: prev.title_en || translations.en,
+          title_de: prev.title_de || translations.de,
+          title_es: prev.title_es || translations.es,
+        }));
+      });
+    }
+  };
+
   const fetchArticle = async () => {
     try {
       const { data, error } = await supabase
@@ -70,7 +91,6 @@ const WriteArticle = () => {
       if (error) throw error;
 
       if (data) {
-        // Parse media from JSON if available
         let mediaItems: MediaItem[] = [];
         if (data.media && Array.isArray(data.media)) {
           mediaItems = (data.media as unknown as MediaItem[]).map((item: any) => ({
@@ -78,7 +98,6 @@ const WriteArticle = () => {
             type: item.type === "video" ? "video" : "image",
           }));
         } else if (data.cover_image) {
-          // Fallback: convert old cover_image to new format
           mediaItems = [{ url: data.cover_image, type: "image" }];
         }
 
@@ -89,6 +108,8 @@ const WriteArticle = () => {
           title_es: data.title_es || "",
           content_fr: data.content_fr || "",
           content_en: data.content_en || "",
+          content_de: data.content_de || "",
+          content_es: data.content_es || "",
           excerpt_fr: data.excerpt_fr || "",
           excerpt_en: data.excerpt_en || "",
           category: data.category || "general",
@@ -130,10 +151,7 @@ const WriteArticle = () => {
 
     setLoading(true);
     try {
-      // Get cover image from first media item
       const coverImage = form.media.length > 0 ? form.media[0].url : null;
-
-      // Convert media to JSON-compatible format
       const mediaJson = form.media.map(item => ({ url: item.url, type: item.type }));
 
       const articleData = {
@@ -144,8 +162,8 @@ const WriteArticle = () => {
         title_es: form.title_es || form.title_fr,
         content_fr: form.content_fr,
         content_en: form.content_en || form.content_fr,
-        content_de: form.content_fr,
-        content_es: form.content_fr,
+        content_de: form.content_de || form.content_fr,
+        content_es: form.content_es || form.content_fr,
         excerpt_fr: form.excerpt_fr,
         excerpt_en: form.excerpt_en || form.excerpt_fr,
         excerpt_de: form.excerpt_fr,
@@ -160,7 +178,6 @@ const WriteArticle = () => {
       };
 
       if (id) {
-        // Update existing article
         const { error } = await supabase
           .from('articles')
           .update(articleData)
@@ -175,7 +192,6 @@ const WriteArticle = () => {
             : "Votre brouillon a été enregistré.",
         });
       } else {
-        // Create new article
         const { error } = await supabase
           .from('articles')
           .insert(articleData);
@@ -262,33 +278,66 @@ const WriteArticle = () => {
               </CardContent>
             </Card>
 
-            {/* Main Content */}
+            {/* Titles with auto-translation */}
             <Card>
               <CardHeader>
-                <CardTitle>Contenu de l'article</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Titres
+                  {translating && <Loader2 size={16} className="animate-spin text-primary" />}
+                  <Sparkles size={16} className="text-primary" />
+                  <span className="text-xs text-muted-foreground font-normal">Traduction automatique</span>
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="title_fr">Titre (Français) *</Label>
                   <Input
                     id="title_fr"
                     placeholder="Un titre accrocheur..."
                     value={form.title_fr}
-                    onChange={(e) => setForm({ ...form, title_fr: e.target.value })}
+                    onChange={(e) => handleTitleChange(e.target.value)}
                     className="text-lg"
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="title_en">Titre (Anglais)</Label>
-                  <Input
-                    id="title_en"
-                    placeholder="English title..."
-                    value={form.title_en}
-                    onChange={(e) => setForm({ ...form, title_en: e.target.value })}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="title_en">Titre (Anglais)</Label>
+                    <Input
+                      id="title_en"
+                      placeholder="English title..."
+                      value={form.title_en}
+                      onChange={(e) => setForm({ ...form, title_en: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="title_de">Titre (Allemand)</Label>
+                    <Input
+                      id="title_de"
+                      placeholder="Deutscher Titel..."
+                      value={form.title_de}
+                      onChange={(e) => setForm({ ...form, title_de: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="title_es">Titre (Espagnol)</Label>
+                    <Input
+                      id="title_es"
+                      placeholder="Título en español..."
+                      value={form.title_es}
+                      onChange={(e) => setForm({ ...form, title_es: e.target.value })}
+                    />
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
 
+            {/* Main Content with Rich Text Editor */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Contenu de l'article</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div>
                   <Label htmlFor="excerpt_fr">Résumé (Français)</Label>
                   <Textarea
@@ -301,13 +350,12 @@ const WriteArticle = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="content_fr">Contenu (Français) *</Label>
-                  <Textarea
-                    id="content_fr"
-                    placeholder="Rédigez votre article ici..."
-                    value={form.content_fr}
-                    onChange={(e) => setForm({ ...form, content_fr: e.target.value })}
-                    rows={15}
+                  <Label>Contenu (Français) *</Label>
+                  <RichTextEditor
+                    content={form.content_fr}
+                    onChange={(content) => setForm({ ...form, content_fr: content })}
+                    placeholder="Rédigez votre article ici avec le formatage souhaité..."
+                    className="min-h-[400px]"
                   />
                 </div>
               </CardContent>
