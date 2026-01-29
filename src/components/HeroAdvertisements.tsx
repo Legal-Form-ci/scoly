@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SmartImage from "@/components/SmartImage";
+import { Badge } from "@/components/ui/badge";
 
-interface Advertisement {
+interface CarouselItem {
   id: string;
   title: string;
   description: string | null;
@@ -13,51 +14,95 @@ interface Advertisement {
   media_url: string | null;
   link_url: string | null;
   link_text: string | null;
+  type: "ad" | "article";
+  priority: number;
 }
 
 const HeroAdvertisements = () => {
-  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
+  const [items, setItems] = useState<CarouselItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
-    fetchAdvertisements();
+    fetchContent();
   }, []);
 
+  // Auto-scroll with pause on hover
   useEffect(() => {
-    if (advertisements.length <= 1) return;
+    if (items.length <= 1 || isPaused) return;
 
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % advertisements.length);
+      setCurrentIndex((prev) => (prev + 1) % items.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [advertisements.length]);
+  }, [items.length, isPaused]);
 
-  const fetchAdvertisements = async () => {
+  const fetchContent = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch advertisements
+      const { data: ads, error: adsError } = await supabase
         .from("advertisements")
-        .select("id, title, description, media_type, media_url, link_url, link_text")
+        .select("id, title, description, media_type, media_url, link_url, link_text, priority")
         .eq("is_active", true)
         .order("priority", { ascending: false })
         .limit(5);
 
-      if (error) throw error;
-      setAdvertisements(data || []);
+      if (adsError) throw adsError;
+
+      // Fetch published articles
+      const { data: articles, error: articlesError } = await supabase
+        .from("articles")
+        .select("id, title_fr, excerpt_fr, cover_image, published_at")
+        .eq("status", "published")
+        .order("published_at", { ascending: false })
+        .limit(5);
+
+      if (articlesError) throw articlesError;
+
+      // Transform and merge
+      const adItems: CarouselItem[] = (ads || []).map((ad) => ({
+        id: ad.id,
+        title: ad.title,
+        description: ad.description,
+        media_type: ad.media_type,
+        media_url: ad.media_url,
+        link_url: ad.link_url,
+        link_text: ad.link_text,
+        type: "ad" as const,
+        priority: ad.priority || 0,
+      }));
+
+      const articleItems: CarouselItem[] = (articles || []).map((article, index) => ({
+        id: article.id,
+        title: article.title_fr,
+        description: article.excerpt_fr,
+        media_type: "image",
+        media_url: article.cover_image,
+        link_url: `/actualites/${article.id}`,
+        link_text: "Lire l'article",
+        type: "article" as const,
+        priority: -index, // Lower priority than ads
+      }));
+
+      // Combine and sort by priority (ads first, then articles by date)
+      const combined = [...adItems, ...articleItems].sort((a, b) => b.priority - a.priority);
+      
+      setItems(combined.slice(0, 10)); // Max 10 items
     } catch (error) {
-      console.error("Error fetching ads:", error);
+      console.error("Error fetching content:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? advertisements.length - 1 : prev - 1));
+    setCurrentIndex((prev) => (prev === 0 ? items.length - 1 : prev - 1));
   };
 
   const goToNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % advertisements.length);
+    setCurrentIndex((prev) => (prev + 1) % items.length);
   };
 
   if (loading) {
@@ -68,8 +113,8 @@ const HeroAdvertisements = () => {
     );
   }
 
-  // Fallback content if no ads
-  if (advertisements.length === 0) {
+  // Fallback content if no items
+  if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 backdrop-blur-sm overflow-hidden">
         <div className="p-6 sm:p-8">
@@ -114,37 +159,49 @@ const HeroAdvertisements = () => {
     );
   }
 
-  const currentAd = advertisements[currentIndex];
+  const currentItem = items[currentIndex];
 
   return (
-    <div className="rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 backdrop-blur-sm overflow-hidden">
+    <div 
+      className="rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 backdrop-blur-sm overflow-hidden"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       <div className="relative">
         {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-black/30">
+        <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-black/60 to-transparent">
           <div className="flex items-center justify-between">
-            <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white">
-              À la une
-            </span>
-            {advertisements.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white">
+                À la une
+              </span>
+              {currentItem.type === "article" && (
+                <Badge className="bg-accent text-accent-foreground text-xs">
+                  <Newspaper size={10} className="mr-1" />
+                  Article
+                </Badge>
+              )}
+            </div>
+            {items.length > 1 && (
               <span className="text-white/80 text-xs">
-                {currentIndex + 1} / {advertisements.length}
+                {currentIndex + 1} / {items.length}
               </span>
             )}
           </div>
         </div>
 
-        {/* Media avec SmartImage */}
+        {/* Media */}
         <div className="relative aspect-[4/3] sm:aspect-video">
-          {currentAd.media_type === "image" && currentAd.media_url ? (
+          {currentItem.media_type === "image" && currentItem.media_url ? (
             <SmartImage
-              src={currentAd.media_url}
-              alt={currentAd.title}
+              src={currentItem.media_url}
+              alt={currentItem.title}
               className="w-full h-full object-cover"
               fallbackSrc="/placeholder.svg"
             />
-          ) : currentAd.media_type === "video" && currentAd.media_url ? (
+          ) : currentItem.media_type === "video" && currentItem.media_url ? (
             <video
-              src={currentAd.media_url}
+              src={currentItem.media_url}
               className="w-full h-full object-cover"
               autoPlay
               muted
@@ -152,36 +209,36 @@ const HeroAdvertisements = () => {
               playsInline
             />
           ) : (
-            <div className="w-full h-full bg-primary flex items-center justify-center p-6">
+            <div className="w-full h-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center p-6">
               <p className="text-2xl font-display font-bold text-white text-center">
-                {currentAd.title}
+                {currentItem.title}
               </p>
             </div>
           )}
 
-          {/* Overlay with content - Fond solide */}
-          <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-4 sm:p-6">
-            <h3 className="text-lg sm:text-xl font-display font-bold text-white mb-1">
-              {currentAd.title}
+          {/* Overlay with content */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col justify-end p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-display font-bold text-white mb-1 line-clamp-2">
+              {currentItem.title}
             </h3>
-            {currentAd.description && (
+            {currentItem.description && (
               <p className="text-white/80 text-sm line-clamp-2 mb-3">
-                {currentAd.description}
+                {currentItem.description}
               </p>
             )}
-            {currentAd.link_url && (
+            {currentItem.link_url && (
               <Link
-                to={currentAd.link_url}
-                className="inline-flex items-center gap-2 text-white font-medium text-sm hover:underline"
+                to={currentItem.link_url}
+                className="inline-flex items-center gap-2 text-white font-medium text-sm hover:underline w-fit"
               >
-                {currentAd.link_text || "En savoir plus"}
+                {currentItem.link_text || "En savoir plus"}
                 <ExternalLink size={14} />
               </Link>
             )}
           </div>
 
           {/* Navigation Arrows */}
-          {advertisements.length > 1 && (
+          {items.length > 1 && (
             <>
               <Button
                 variant="ghost"
@@ -204,15 +261,17 @@ const HeroAdvertisements = () => {
         </div>
 
         {/* Dots */}
-        {advertisements.length > 1 && (
+        {items.length > 1 && (
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {advertisements.map((_, index) => (
+            {items.map((item, index) => (
               <button
-                key={index}
+                key={item.id}
                 onClick={() => setCurrentIndex(index)}
                 className={`w-2 h-2 rounded-full transition-all ${
                   index === currentIndex
                     ? "bg-white w-4"
+                    : item.type === "article"
+                    ? "bg-accent/70 hover:bg-accent"
                     : "bg-white/50 hover:bg-white/70"
                 }`}
               />

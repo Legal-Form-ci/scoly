@@ -44,23 +44,14 @@ const HeroSection = () => {
   };
 
   const scolyCategories = [
-    { name: "Izy-Scoly Primaire", slug: "scoly-primaire", tone: "primary" as const },
-    { name: "Izy-Scoly Secondaire", slug: "scoly-secondaire", tone: "secondary" as const },
-    { name: "Izy-Scoly Université", slug: "scoly-universite", tone: "accent" as const },
-    { name: "Izy-Scoly Bureautique", slug: "scoly-bureautique", tone: "muted" as const },
-    { name: "Izy-Scoly Librairie", slug: "scoly-librairie", tone: "muted" as const },
+    { name: "Izy-Scoly Primaire", slug: "scoly-primaire" },
+    { name: "Izy-Scoly Secondaire", slug: "scoly-secondaire" },
+    { name: "Izy-Scoly Université", slug: "scoly-universite" },
   ];
-
-  const toneClasses: Record<(typeof scolyCategories)[number]["tone"], string> = {
-    primary: "bg-primary-foreground/10 hover:bg-primary-foreground/20",
-    secondary: "bg-secondary/20 hover:bg-secondary/30",
-    accent: "bg-accent/20 hover:bg-accent/30",
-    muted: "bg-primary-foreground/10 hover:bg-primary-foreground/20",
-  };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-      {/* Background - Solid color, no gradient */}
+      {/* Background - Solid color */}
       <div className="absolute inset-0 bg-primary" />
 
       {/* Decorative Elements */}
@@ -80,64 +71,76 @@ const HeroSection = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto">
-          {/* NEW LAYOUT: Hero Advertisements on TOP RIGHT as requested */}
+          {/* CENTERED MAIN HEADING - spans both columns */}
+          <div className="text-center mb-8 animate-slide-up">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-6">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-primary-foreground/90 text-sm font-medium">
+                Fournitures scolaires et bureautiques 📚
+              </span>
+            </div>
+            
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 leading-tight">
+              {t.hero.title1}
+              <span className="block mt-2 text-accent">{t.hero.title2}</span>
+            </h1>
+            
+            <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-3xl mx-auto mb-8 leading-relaxed">
+              Votre référence en Côte d'Ivoire pour les fournitures scolaires et bureautiques de qualité,
+              livrées gratuitement partout.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+              <Link to="/shop">
+                <Button variant="accent" size="xl">
+                  <ShoppingBag size={20} />
+                  Découvrir nos produits
+                </Button>
+              </Link>
+              <Link to="/actualites">
+                <Button variant="heroOutline" size="xl">
+                  <Newspaper size={20} />
+                  Actualités
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* TWO COLUMN LAYOUT: "À la une" on right, 3 blocks below it */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
-            {/* LEFT: Main Content */}
-            <div className="text-center lg:text-left order-2 lg:order-1">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-6 animate-slide-up">
-                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                <span className="text-primary-foreground/90 text-sm font-medium">
-                  Fournitures scolaires et bureautiques 📚
-                </span>
-              </div>
-
-              {/* Heading */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 animate-slide-up animation-delay-100 leading-tight">
-                {t.hero.title1}
-                <span className="block mt-2 text-accent">{t.hero.title2}</span>
-              </h1>
-
-              {/* Subheading */}
-              <p className="text-lg sm:text-xl text-primary-foreground/90 max-w-2xl mx-auto lg:mx-0 mb-8 animate-slide-up animation-delay-200 leading-relaxed">
-                Votre référence en Côte d'Ivoire pour les fournitures scolaires et bureautiques de qualité,
-                livrées gratuitement partout.
-              </p>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4 mb-8 animate-slide-up animation-delay-300">
-                <Link to="/shop" className="w-full sm:w-auto">
-                  <Button variant="accent" size="xl" className="w-full sm:w-auto">
-                    <ShoppingBag size={20} />
-                    Découvrir nos produits
-                  </Button>
-                </Link>
-                <Link to="/actualites" className="w-full sm:w-auto">
-                  <Button variant="heroOutline" size="xl" className="w-full sm:w-auto">
-                    <Newspaper size={20} />
-                    Actualités
-                  </Button>
-                </Link>
-              </div>
-
+            {/* LEFT COLUMN: Categories pills + Feature cards */}
+            <div className="animate-slide-up animation-delay-300">
               {/* Categories - Quick access */}
-              <div className="mb-8 animate-slide-up animation-delay-400">
+              <div className="mb-6">
                 <p className="text-primary-foreground/70 text-sm mb-3">Parcourir par catégorie :</p>
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-stretch sm:items-center justify-center lg:justify-start gap-2">
+                <div className="flex flex-wrap gap-2">
                   {scolyCategories.map((category) => (
                     <Link
                       key={category.slug}
                       to={`/shop?category=${category.slug}`}
-                      className={`px-3 py-1.5 rounded-full ${toneClasses[category.tone]} backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03] text-center`}
+                      className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
                     >
                       {category.name}
                     </Link>
                   ))}
+                  <Link
+                    to="/shop?category=scoly-bureautique"
+                    className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
+                  >
+                    Izy-Scoly Bureautique
+                  </Link>
+                  <Link
+                    to="/shop?category=scoly-librairie"
+                    className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
+                  >
+                    Izy-Scoly Librairie
+                  </Link>
                 </div>
               </div>
 
-              {/* Feature Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up animation-delay-500">
+              {/* 3 Feature Cards - NOW BELOW "À la une" area */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FeatureCard
                   icon={<ShoppingBag size={24} />}
                   title="Catalogue"
@@ -162,8 +165,8 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* RIGHT: Dynamic Advertisements - MOVED TO TOP */}
-            <div className="animate-slide-up animation-delay-100 order-1 lg:order-2 lg:sticky lg:top-24">
+            {/* RIGHT COLUMN: "À la une" carousel (ads + articles) */}
+            <div className="animate-slide-up animation-delay-100 lg:sticky lg:top-24">
               <HeroAdvertisements />
             </div>
           </div>

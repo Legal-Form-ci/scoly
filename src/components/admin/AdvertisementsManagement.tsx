@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Image, Video, Type, Loader2, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit, Trash2, Image, Video, Type, Loader2, X, Sparkles, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +32,8 @@ const AdvertisementsManagement = () => {
   const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [generatingCTA, setGeneratingCTA] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -49,6 +51,16 @@ const AdvertisementsManagement = () => {
   useEffect(() => {
     fetchAdvertisements();
   }, []);
+
+  // Auto-generate CTA when title or description changes
+  useEffect(() => {
+    if (formData.title && formData.title.length > 5) {
+      const timer = setTimeout(() => {
+        generateCTA();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [formData.title, formData.description]);
 
   const fetchAdvertisements = async () => {
     const { data, error } = await supabase
@@ -97,32 +109,103 @@ const AdvertisementsManagement = () => {
     setIsDialogOpen(true);
   };
 
+  const generateCTA = async () => {
+    if (!formData.title || generatingCTA) return;
+
+    setGeneratingCTA(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-ad-cta", {
+        body: { title: formData.title, description: formData.description },
+      });
+
+      if (error) throw error;
+
+      if (data?.link_url && data?.link_text) {
+        setFormData(prev => ({
+          ...prev,
+          link_url: data.link_url,
+          link_text: data.link_text,
+        }));
+      }
+    } catch (error) {
+      console.error("Error generating CTA:", error);
+    } finally {
+      setGeneratingCTA(false);
+    }
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      toast.error("Format non supporté. Utilisez une image ou vidéo.");
+      return;
+    }
+
+    // Size limits
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(`Fichier trop volumineux (max ${isVideo ? "50 Mo" : "5 Mo"})`);
+      return;
+    }
+
     setUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `ads/${Date.now()}.${fileExt}`;
+      const folder = isVideo ? "videos" : "images";
+      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("article-images")
-        .upload(fileName, file);
+        .from("advertisement-media")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        // Fallback: try article-images bucket
+        const { error: fallbackError } = await supabase.storage
+          .from("article-images")
+          .upload(fileName, file);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("article-images")
-        .getPublicUrl(fileName);
+        if (fallbackError) throw fallbackError;
 
-      setFormData(prev => ({ ...prev, media_url: publicUrl }));
+        const { data: { publicUrl } } = supabase.storage
+          .from("article-images")
+          .getPublicUrl(fileName);
+
+        setFormData(prev => ({ 
+          ...prev, 
+          media_url: publicUrl,
+          media_type: isVideo ? "video" : "image"
+        }));
+      } else {
+        const { data: { publicUrl } } = supabase.storage
+          .from("advertisement-media")
+          .getPublicUrl(fileName);
+
+        setFormData(prev => ({ 
+          ...prev, 
+          media_url: publicUrl,
+          media_type: isVideo ? "video" : "image"
+        }));
+      }
+
       toast.success("Fichier téléchargé");
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Erreur lors du téléchargement");
     } finally {
       setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -241,7 +324,7 @@ const AdvertisementsManagement = () => {
                 <Label>Type de média</Label>
                 <Select
                   value={formData.media_type}
-                  onValueChange={(value: "image" | "video" | "text") => setFormData(prev => ({ ...prev, media_type: value }))}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, media_type: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -257,54 +340,123 @@ const AdvertisementsManagement = () => {
               {formData.media_type !== "text" && (
                 <div>
                   <Label>Fichier média</Label>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    {/* URL Input */}
                     <Input
                       value={formData.media_url}
                       onChange={(e) => setFormData(prev => ({ ...prev, media_url: e.target.value }))}
-                      placeholder="URL du fichier..."
+                      placeholder="URL du fichier ou téléchargez ci-dessous..."
                     />
+                    
+                    {/* File Upload */}
                     <div className="flex items-center gap-2">
-                      <Input
+                      <input
+                        ref={fileInputRef}
                         type="file"
                         accept={formData.media_type === "image" ? "image/*" : "video/*"}
                         onChange={handleUpload}
                         disabled={uploading}
+                        className="hidden"
+                        id="ad-media-upload"
                       />
-                      {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="w-full"
+                      >
+                        {uploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Téléchargement...
+                          </>
+                        ) : (
+                          <>
+                            {formData.media_type === "image" ? <Image size={16} className="mr-2" /> : <Video size={16} className="mr-2" />}
+                            Choisir un fichier
+                          </>
+                        )}
+                      </Button>
                     </div>
-                    {formData.media_url && formData.media_type === "image" && (
-                      <div className="relative w-full h-32 bg-muted rounded-lg overflow-hidden">
-                        <img src={formData.media_url} alt="Preview" className="w-full h-full object-cover" />
+                    
+                    {/* Preview */}
+                    {formData.media_url && (
+                      <div className="relative w-full h-40 bg-muted rounded-lg overflow-hidden">
+                        {formData.media_type === "image" ? (
+                          <img 
+                            src={formData.media_url} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                          />
+                        ) : (
+                          <video 
+                            src={formData.media_url} 
+                            className="w-full h-full object-cover" 
+                            muted 
+                            playsInline
+                          />
+                        )}
                         <Button
                           variant="destructive"
                           size="icon"
-                          className="absolute top-2 right-2 h-6 w-6"
+                          className="absolute top-2 right-2 h-7 w-7"
                           onClick={() => setFormData(prev => ({ ...prev, media_url: "" }))}
                         >
-                          <X size={12} />
+                          <X size={14} />
                         </Button>
                       </div>
                     )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Images: JPG, PNG, WebP (max 5 Mo) • Vidéos: MP4 (max 50 Mo)
+                  </p>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Lien URL</Label>
-                  <Input
-                    value={formData.link_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, link_url: e.target.value }))}
-                    placeholder="https://..."
-                  />
+              {/* AI-powered CTA fields */}
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-primary" />
+                    <span className="text-sm font-medium">CTA généré par IA</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={generateCTA}
+                    disabled={generatingCTA || !formData.title}
+                  >
+                    {generatingCTA ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <RefreshCw size={14} />
+                    )}
+                    Régénérer
+                  </Button>
                 </div>
-                <div>
-                  <Label>Texte du bouton</Label>
-                  <Input
-                    value={formData.link_text}
-                    onChange={(e) => setFormData(prev => ({ ...prev, link_text: e.target.value }))}
-                    placeholder="En savoir plus"
-                  />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Lien URL</Label>
+                    <Input
+                      value={formData.link_url}
+                      onChange={(e) => setFormData(prev => ({ ...prev, link_url: e.target.value }))}
+                      placeholder="/shop"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Texte du bouton</Label>
+                    <Input
+                      value={formData.link_text}
+                      onChange={(e) => setFormData(prev => ({ ...prev, link_text: e.target.value }))}
+                      placeholder="En savoir plus"
+                      className="h-9"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -366,7 +518,12 @@ const AdvertisementsManagement = () => {
           <div key={ad.id} className="bg-card rounded-xl border border-border overflow-hidden">
             {ad.media_url && ad.media_type === "image" && (
               <div className="h-32 bg-muted">
-                <img src={ad.media_url} alt="" className="w-full h-full object-cover" />
+                <img 
+                  src={ad.media_url} 
+                  alt="" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                />
               </div>
             )}
             {ad.media_url && ad.media_type === "video" && (

@@ -621,6 +621,65 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_proofs: {
+        Row: {
+          created_at: string | null
+          delivery_user_id: string
+          id: string
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          notes: string | null
+          order_id: string
+          proof_type: string
+          recipient_cni_photo_url: string | null
+          recipient_name: string | null
+          recipient_photo_url: string | null
+          signature_url: string | null
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_user_id: string
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          order_id: string
+          proof_type: string
+          recipient_cni_photo_url?: string | null
+          recipient_name?: string | null
+          recipient_photo_url?: string | null
+          signature_url?: string | null
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_user_id?: string
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          order_id?: string
+          proof_type?: string
+          recipient_cni_photo_url?: string | null
+          recipient_name?: string | null
+          recipient_photo_url?: string | null
+          signature_url?: string | null
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_proofs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           email_type: string
@@ -695,6 +754,50 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          parent_id: string | null
+          recipient_id: string
+          sender_id: string
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          parent_id?: string | null
+          recipient_id: string
+          sender_id: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          parent_id?: string | null
+          recipient_id?: string
+          sender_id?: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "internal_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_sessions: {
         Row: {
           confirmed_at: string | null
@@ -764,6 +867,39 @@ export type Database = {
           reward_type?: string
           used_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      moderator_notes: {
+        Row: {
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_resolved: boolean | null
+          moderator_id: string
+          note: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_resolved?: boolean | null
+          moderator_id: string
+          note: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_resolved?: boolean | null
+          moderator_id?: string
+          note?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
