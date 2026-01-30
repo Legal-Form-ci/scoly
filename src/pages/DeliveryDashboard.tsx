@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Package, Truck, CheckCircle, Clock, MapPin, Phone, User, RefreshCw, Calendar } from "lucide-react";
+import { Package, Truck, CheckCircle, Clock, MapPin, Phone, User, RefreshCw, Calendar, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import DeliveryProofForm from "@/components/delivery/DeliveryProofForm";
 
 interface Order {
   id: string;
@@ -39,6 +40,7 @@ const DeliveryDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showProofForm, setShowProofForm] = useState<{ orderId: string; type: 'pickup' | 'delivery' } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -110,40 +112,21 @@ const DeliveryDashboard = () => {
     });
   };
 
-  const updateDeliveryStatus = async (orderId: string, action: "received" | "delivered") => {
-    try {
-      const updates: Record<string, string> = {};
-      
-      if (action === "received") {
-        updates.delivery_received_at = new Date().toISOString();
-        updates.status = "shipped";
-      } else if (action === "delivered") {
-        updates.delivery_delivered_at = new Date().toISOString();
-        updates.status = "delivered";
-      }
+  const handleReceiveWithProof = (orderId: string) => {
+    setShowProofForm({ orderId, type: 'pickup' });
+  };
 
-      const { error } = await supabase
-        .from("orders")
-        .update(updates)
-        .eq("id", orderId);
+  const handleDeliverWithProof = (orderId: string) => {
+    setShowProofForm({ orderId, type: 'delivery' });
+  };
 
-      if (error) throw error;
-
-      toast({
-        title: "Statut mis à jour",
-        description: action === "received" ? "Commande marquée comme réceptionnée" : "Commande marquée comme livrée",
-      });
-
-      // Refresh data
-      await Promise.all([fetchOrders(), fetchStats()]);
-    } catch (error) {
-      console.error("Error updating status:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le statut",
-        variant: "destructive",
-      });
-    }
+  const handleProofSuccess = async () => {
+    setShowProofForm(null);
+    toast({
+      title: "Succès",
+      description: "La preuve a été enregistrée",
+    });
+    await Promise.all([fetchOrders(), fetchStats()]);
   };
 
   const formatPrice = (price: number) => {
@@ -304,7 +287,7 @@ const DeliveryDashboard = () => {
                   <OrderCard
                     key={order.id}
                     order={order}
-                    onReceive={() => updateDeliveryStatus(order.id, "received")}
+                    onReceive={() => handleReceiveWithProof(order.id)}
                     formatPrice={formatPrice}
                     formatDate={formatDate}
                     showReceiveButton
@@ -325,7 +308,7 @@ const DeliveryDashboard = () => {
                   <OrderCard
                     key={order.id}
                     order={order}
-                    onDeliver={() => updateDeliveryStatus(order.id, "delivered")}
+                    onDeliver={() => handleDeliverWithProof(order.id)}
                     formatPrice={formatPrice}
                     formatDate={formatDate}
                     showDeliverButton
@@ -361,6 +344,16 @@ const DeliveryDashboard = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Proof Form Dialog */}
+      {showProofForm && (
+        <DeliveryProofForm
+          orderId={showProofForm.orderId}
+          proofType={showProofForm.type}
+          onSuccess={handleProofSuccess}
+          onCancel={() => setShowProofForm(null)}
+        />
+      )}
 
       <Footer />
     </main>

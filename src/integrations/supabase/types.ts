@@ -1763,6 +1763,10 @@ export type Database = {
           success: boolean
         }[]
       }
+      revoke_blocked_session: {
+        Args: { _session_id: string }
+        Returns: boolean
+      }
       validate_coupon: {
         Args: { _code: string; _order_total: number }
         Returns: {
