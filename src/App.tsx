@@ -32,6 +32,8 @@ import ModeratorDashboard from "./pages/ModeratorDashboard";
 import VendorDashboard from "./pages/VendorDashboard";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
 import PushNotificationPrompt from "./components/PushNotificationPrompt";
+import SystemDatabase from "./pages/SystemDatabase";
+import OAuthBridge from "./pages/OAuthBridge";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,6 +85,10 @@ const App = () => (
                   <Route path="/delivery" element={<DeliveryDashboard />} />
                   <Route path="/moderator" element={<ModeratorDashboard />} />
                   <Route path="/vendor" element={<VendorDashboard />} />
+                  {/* OAuth broker bridge for custom domains (prevents SPA 404 on /~oauth/*) */}
+                  <Route path="/~oauth/*" element={<OAuthBridge />} />
+                  {/* Isolated database portal (admin-only) */}
+                  <Route path="/db" element={<SystemDatabase />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <ScIA />

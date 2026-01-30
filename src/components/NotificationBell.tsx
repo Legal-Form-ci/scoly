@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Bell, Check, CheckCheck, Package, CreditCard, Newspaper, Heart, MessageCircle, Shield, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, CheckCheck, Package, CreditCard, Newspaper, Heart, MessageCircle, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -11,49 +11,11 @@ import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import LoginSecurityAlert from './LoginSecurityAlert';
 
 const NotificationBell = () => {
   const [open, setOpen] = useState(false);
-  const [securityAlert, setSecurityAlert] = useState<any>(null);
-  const [dismissedSecurityIds, setDismissedSecurityIds] = useState<Set<string>>(() => new Set());
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, loading, securityNotifications } = useRealtimeNotifications();
-
-  // Compute next unhandled security notification
-  const nextSecurityNotification = useMemo(() => {
-    return securityNotifications.find((n: any) => n?.id && !dismissedSecurityIds.has(n.id)) || null;
-  }, [securityNotifications, dismissedSecurityIds]);
-
-  // Show security alert if there are pending confirmations
-  useEffect(() => {
-    if (nextSecurityNotification && !securityAlert) {
-      setSecurityAlert(nextSecurityNotification);
-    }
-  }, [nextSecurityNotification, securityAlert]);
-
-  const handleCloseSecurityAlert = useCallback(async () => {
-    if (!securityAlert?.id) {
-      setSecurityAlert(null);
-      return;
-    }
-
-    // Prevent infinite reopen loops even if the DB update is delayed/fails.
-    setDismissedSecurityIds(prev => {
-      const next = new Set(prev);
-      next.add(securityAlert.id);
-      return next;
-    });
-
-    // Best-effort: mark as read in DB + update local state (hook)
-    try {
-      await markAsRead(securityAlert.id);
-    } catch {
-      // markAsRead already logs internally; keep UI usable.
-    } finally {
-      setSecurityAlert(null);
-    }
-  }, [securityAlert, markAsRead]);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useRealtimeNotifications();
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -92,12 +54,6 @@ const NotificationBell = () => {
 
   return (
     <>
-      {securityAlert && (
-        <LoginSecurityAlert
-          notification={securityAlert}
-          onClose={handleCloseSecurityAlert}
-        />
-      )}
       <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
