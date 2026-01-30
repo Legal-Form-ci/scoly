@@ -6,6 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 const FINGERPRINT_KEY = 'izy_device_fingerprint';
 const FINGERPRINT_TS_KEY = 'izy_device_fingerprint_ts';
 
+// Login security alerts are currently disabled in production because they cannot reliably revoke
+// third-party JWT sessions client-side. We keep login_sessions for auditability.
+const LOGIN_SECURITY_ALERTS_ENABLED = false;
+
 export const useLoginSecurity = () => {
   const { user } = useAuth();
 
@@ -88,6 +92,7 @@ export const useLoginSecurity = () => {
     currentDeviceFingerprint: string,
     sessionId: string
   ) => {
+    if (!LOGIN_SECURITY_ALERTS_ENABLED) return;
     try {
       // Store notification in database for in-app display on OTHER devices
       // The notification includes the current device fingerprint so we can filter it out
@@ -157,37 +162,16 @@ export const useLoginSecurity = () => {
         return;
       }
 
-      // Create notification directly with fingerprint included
-      // This ensures the origin device is identified correctly
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          type: 'security',
-          title: 'Nouvelle connexion détectée',
-          message: `Une nouvelle connexion a été détectée depuis ${deviceInfo}. Est-ce vous ?`,
-          data: {
-            session_id: sessionData.id,
-            ip_address: ipAddress,
-            device_info: deviceInfo,
-            requires_confirmation: true,
-            origin_device_fingerprint: deviceFingerprint, // CRITICAL: Include fingerprint
-            notification_id: crypto.randomUUID()
-          }
-        });
-
-      if (notifError) {
-        console.error('[Security] Error creating notification:', notifError);
+      // Alerts intentionally disabled: keep only the audit trail (login_sessions).
+      if (LOGIN_SECURITY_ALERTS_ENABLED) {
+        await sendLoginPushNotification(
+          userId,
+          deviceInfo,
+          ipAddress,
+          deviceFingerprint,
+          sessionData.id
+        );
       }
-
-      // Send push notification to OTHER devices only
-      await sendLoginPushNotification(
-        userId, 
-        deviceInfo, 
-        ipAddress, 
-        deviceFingerprint,
-        sessionData.id
-      );
       
     } catch (error) {
       console.error('[Security] Error in recordLoginSession:', error);

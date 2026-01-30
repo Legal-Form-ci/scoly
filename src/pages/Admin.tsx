@@ -140,7 +140,6 @@ const Admin = () => {
     { id: "promotions", label: "Promotions", icon: Tag },
     { id: "advertisements", label: "Publicités", icon: Bell },
     { id: "faq", label: "FAQ", icon: HelpCircle },
-    { id: "database", label: "Base de données", icon: Database },
     { id: "settings", label: "Paramètres", icon: Settings },
   ];
 
@@ -264,7 +263,6 @@ const Admin = () => {
           {activeTab === "promotions" && <CouponManagement />}
           {activeTab === "advertisements" && <AdvertisementsManagement />}
           {activeTab === "faq" && <FAQManagement />}
-          {activeTab === "database" && <DatabaseManagement />}
           {activeTab === "settings" && <PlatformSettings />}
         </div>
       </div>
