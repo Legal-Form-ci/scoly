@@ -13,6 +13,9 @@ interface Notification {
   data: unknown;
 }
 
+// Consistent fingerprint key with useLoginSecurity
+const FINGERPRINT_KEY = 'izy_device_fingerprint';
+
 export const useRealtimeNotifications = () => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -22,19 +25,37 @@ export const useRealtimeNotifications = () => {
 
   // Get current device fingerprint from localStorage
   const getCurrentDeviceFingerprint = useCallback(() => {
-    return localStorage.getItem('device_fingerprint') || '';
+    return localStorage.getItem(FINGERPRINT_KEY) || '';
   }, []);
+
+  // Check if a security notification originated from THIS device
+  const isFromCurrentDevice = useCallback((notificationData: Record<string, unknown> | null) => {
+    if (!notificationData) return false;
+    
+    const currentFingerprint = getCurrentDeviceFingerprint();
+    const originFingerprint = notificationData.origin_device_fingerprint as string | undefined;
+    
+    // Match fingerprints
+    if (originFingerprint && currentFingerprint && originFingerprint === currentFingerprint) {
+      return true;
+    }
+    
+    // Also check timing - if notification was just created and no fingerprint, likely same device
+    const createdAt = notificationData.created_at as string | undefined;
+    if (createdAt && !currentFingerprint) {
+      const notifTime = new Date(createdAt).getTime();
+      const now = Date.now();
+      // Within 10 seconds = likely same device
+      if (now - notifTime < 10000) {
+        return true;
+      }
+    }
+    
+    return false;
+  }, [getCurrentDeviceFingerprint]);
 
   // Filter out security notifications that originated from THIS device
   const filterSecurityNotifications = useCallback((notifs: Notification[]) => {
-    const currentFingerprint = getCurrentDeviceFingerprint();
-    
-    if (!currentFingerprint) {
-      // No fingerprint stored = this is likely the device that just logged in
-      // Be more aggressive in filtering
-      return notifs.filter(n => n.type !== 'security');
-    }
-    
     return notifs.filter(n => {
       // If it's not a security notification, include it
       if (n.type !== 'security') return true;
@@ -45,15 +66,14 @@ export const useRealtimeNotifications = () => {
       if (!data?.requires_confirmation) return true;
       
       // If this notification was triggered by the current device, exclude it
-      const originFingerprint = data?.origin_device_fingerprint as string | undefined;
-      if (originFingerprint && originFingerprint === currentFingerprint) {
-        console.log('[Notifications] Filtering out notification from current device');
-        return false; // Don't show on the device that just logged in
+      if (isFromCurrentDevice(data)) {
+        console.log('[Notifications] Filtering out security notification from current device');
+        return false;
       }
       
       return true;
     });
-  }, [getCurrentDeviceFingerprint]);
+  }, [isFromCurrentDevice]);
 
   // Fetch existing notifications
   const fetchNotifications = useCallback(async () => {
@@ -126,11 +146,9 @@ export const useRealtimeNotifications = () => {
 
     fetchNotifications();
 
-    const currentFingerprint = getCurrentDeviceFingerprint();
-
     // Subscribe to new notifications for this user
     const channel = supabase
-      .channel('user-notifications')
+      .channel('user-notifications-' + user.id)
       .on(
         'postgres_changes',
         {
@@ -145,24 +163,9 @@ export const useRealtimeNotifications = () => {
           
           // If it's a security notification from THIS device, ignore it completely
           if (newNotification.type === 'security' && data?.requires_confirmation) {
-            const originFingerprint = data?.origin_device_fingerprint as string | undefined;
-            
-            // Strong check: if fingerprints match OR if no fingerprint stored yet
-            if (originFingerprint && originFingerprint === currentFingerprint) {
+            if (isFromCurrentDevice(data)) {
               console.log('[Notifications] Ignoring security alert - this is the device that just logged in');
               return; // Don't show on the device that just logged in
-            }
-            
-            // Also check if notification was created very recently (within 5 seconds)
-            // and we don't have a fingerprint - likely same device
-            const createdAt = data?.created_at as string | undefined;
-            if (createdAt && !currentFingerprint) {
-              const notifTime = new Date(createdAt).getTime();
-              const now = Date.now();
-              if (now - notifTime < 5000) {
-                console.log('[Notifications] Ignoring very recent security alert on device without fingerprint');
-                return;
-              }
             }
           }
           
@@ -190,14 +193,14 @@ export const useRealtimeNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, fetchNotifications, toast, getCurrentDeviceFingerprint]);
+  }, [user, fetchNotifications, toast, isFromCurrentDevice]);
 
   // Subscribe to order updates for admins
   useEffect(() => {
     if (!user || !isAdmin) return;
 
     const channel = supabase
-      .channel('admin-orders')
+      .channel('admin-orders-' + user.id)
       .on(
         'postgres_changes',
         {

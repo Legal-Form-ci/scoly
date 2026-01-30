@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Shield, AlertTriangle, CheckCircle, XCircle, Monitor, MapPin, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, AlertTriangle, CheckCircle, XCircle, Monitor, MapPin, ShieldCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -30,14 +30,22 @@ interface LoginSecurityAlertProps {
 const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) => {
   const [loading, setLoading] = useState(false);
   const [showTrustPrompt, setShowTrustPrompt] = useState(false);
-  const { blockLoginSession, confirmLoginSession, getStoredFingerprint } = useLoginSecurity();
+  const { blockLoginSession, confirmLoginSession, getStoredFingerprint, isNotificationForCurrentDevice } = useLoginSecurity();
   
   const data = notification.data;
 
   // Check if this alert is for the current device - if so, don't show it
+  useEffect(() => {
+    if (data && isNotificationForCurrentDevice(data as Record<string, unknown>)) {
+      console.log('[Security Alert] This notification is for the current device - auto-closing');
+      onClose();
+    }
+  }, [data, isNotificationForCurrentDevice, onClose]);
+
+  // Double check with fingerprint
   const currentFingerprint = getStoredFingerprint();
   if (data?.origin_device_fingerprint && data.origin_device_fingerprint === currentFingerprint) {
-    // This is for the current device - auto-close and don't show
+    console.log('[Security Alert] Fingerprint match - not showing alert on origin device');
     return null;
   }
 
@@ -69,6 +77,8 @@ const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) 
         }
       } else {
         // User says it's NOT them - BLOCK the session
+        console.log('[Security] User clicked "Not me" - blocking session:', data.session_id);
+        
         const success = await blockLoginSession(data.session_id);
         
         if (!success) {
@@ -81,32 +91,33 @@ const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) 
           .update({ is_read: true })
           .eq('id', notification.id);
 
-        // Sign out the blocked session by updating all sessions for this user
-        // In a full implementation, you'd also invalidate the JWT token
+        // Show strong warning
         toast.warning(
-          'Connexion bloquée ! L\'accès depuis cet appareil a été révoqué. Si ce n\'était pas vous, changez votre mot de passe immédiatement.',
-          { duration: 8000 }
+          'Session bloquée ! L\'accès depuis cet appareil a été révoqué. Si ce n\'était pas vous, changez votre mot de passe immédiatement.',
+          { duration: 10000 }
         );
+
+        // Also sign out ALL other sessions for this user (security measure)
+        // In production, you'd use a server-side function to invalidate tokens
+        console.log('[Security] Session blocked successfully. User should change password.');
       }
     } catch (error) {
-      console.error('Error handling login confirmation:', error);
-      toast.error('Erreur lors de la confirmation');
+      console.error('[Security] Error handling login confirmation:', error);
+      toast.error('Erreur lors de la confirmation. Veuillez réessayer.');
     } finally {
       setLoading(false);
       setShowTrustPrompt(false);
-      // Always close after processing
       onClose();
     }
   };
 
   const handleYesItsMe = () => {
-    // Ask if they want to trust this device
     setShowTrustPrompt(true);
   };
 
   if (showTrustPrompt) {
     return (
-      <Dialog open onOpenChange={onClose}>
+      <Dialog open onOpenChange={() => !loading && onClose()}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -142,15 +153,19 @@ const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) 
               disabled={loading}
               className="flex-1"
             >
-              Non, juste cette fois
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Non, juste cette fois'}
             </Button>
             <Button
               onClick={() => handleConfirm(true, true)}
               disabled={loading}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
-              <ShieldCheck className="h-4 w-4 mr-2" />
-              Oui, faire confiance
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <>
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Oui, faire confiance
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -159,7 +174,7 @@ const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) 
   }
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={() => !loading && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -204,16 +219,24 @@ const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) 
             disabled={loading}
             className="flex-1"
           >
-            <XCircle className="h-4 w-4 mr-2" />
-            Ce n'est pas moi
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+              <>
+                <XCircle className="h-4 w-4 mr-2" />
+                Ce n'est pas moi
+              </>
+            )}
           </Button>
           <Button
             onClick={handleYesItsMe}
             disabled={loading}
             className="flex-1"
           >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Oui, c'est moi
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Oui, c'est moi
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

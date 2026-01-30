@@ -107,14 +107,14 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* TWO COLUMN LAYOUT: "À la une" on right, 3 blocks below it */}
+          {/* TWO COLUMN LAYOUT: Categories on left, "À la une" on right */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
-            {/* LEFT COLUMN: Categories pills + Feature cards */}
+            {/* LEFT COLUMN: Categories pills */}
             <div className="animate-slide-up animation-delay-300">
               {/* Categories - Quick access */}
               <div className="mb-6">
-                <p className="text-primary-foreground/70 text-sm mb-3">Parcourir par catégorie :</p>
-                <div className="flex flex-wrap gap-2">
+                <p className="text-primary-foreground/70 text-sm mb-3 text-center lg:text-left">Parcourir par catégorie :</p>
+                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                   {scolyCategories.map((category) => (
                     <Link
                       key={category.slug}
@@ -138,36 +138,38 @@ const HeroSection = () => {
                   </Link>
                 </div>
               </div>
-
-              {/* 3 Feature Cards - NOW BELOW "À la une" area */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FeatureCard
-                  icon={<ShoppingBag size={24} />}
-                  title="Catalogue"
-                  description={`${formatNumber(stats.products)} produits`}
-                  color="bg-primary-foreground/10"
-                  href="/shop"
-                />
-                <FeatureCard
-                  icon={<Truck size={24} />}
-                  title="Livraison gratuite"
-                  description="Sur toutes vos commandes"
-                  color="bg-secondary/20"
-                  href="/shop"
-                />
-                <FeatureCard
-                  icon={<Newspaper size={24} />}
-                  title="Actualités"
-                  description={`${formatNumber(stats.articles)} publications`}
-                  color="bg-accent/20"
-                  href="/actualites"
-                />
-              </div>
             </div>
 
             {/* RIGHT COLUMN: "À la une" carousel (ads + articles) */}
             <div className="animate-slide-up animation-delay-100 lg:sticky lg:top-24">
               <HeroAdvertisements />
+            </div>
+          </div>
+
+          {/* 3 Feature Cards - BELOW "À la une" section, full width, pushed up with negative margin on desktop */}
+          <div className="mt-6 lg:-mt-2 animate-slide-up animation-delay-400">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <FeatureCard
+                icon={<ShoppingBag size={24} />}
+                title="Catalogue"
+                description={`${formatNumber(stats.products)} produits`}
+                color="bg-primary-foreground/10"
+                href="/shop"
+              />
+              <FeatureCard
+                icon={<Truck size={24} />}
+                title="Livraison gratuite"
+                description="Sur toutes vos commandes"
+                color="bg-secondary/20"
+                href="/shop"
+              />
+              <FeatureCard
+                icon={<Newspaper size={24} />}
+                title="Actualités"
+                description={`${formatNumber(stats.articles)} publications`}
+                color="bg-accent/20"
+                href="/actualites"
+              />
             </div>
           </div>
         </div>
@@ -205,7 +207,7 @@ const FeatureCard = ({ icon, title, description, color, href }: FeatureCardProps
           {icon}
         </div>
         <h3 className="text-base font-display font-semibold text-primary-foreground">{title}</h3>
-        <p className="text-xs text-primary-foreground/80">{description}</p>
+        <p className="text-xs text-primary-foreground/80 line-clamp-2">{description}</p>
       </div>
       <ArrowRight
         size={16}
