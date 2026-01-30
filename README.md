@@ -1,73 +1,74 @@
-# Welcome to your Lovable project
+# Izy-Scoly
 
-## Project info
+Plateforme e-commerce de fournitures scolaires et bureautiques en Côte d'Ivoire.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## À propos
 
-## How can I edit this code?
+**Izy-Scoly** est une plateforme complète dédiée à la vente de fournitures scolaires et bureautiques, avec un système de publication d'actualités et de gestion multi-vendeurs.
 
-There are several ways of editing your application.
+## Fonctionnalités
 
-**Use Lovable**
+- **E-commerce** : Catalogue produits, panier, commandes, paiements (KkiaPay, Mobile Money)
+- **Multi-vendeurs** : Tableau de bord vendeur, gestion des produits, commissions
+- **Actualités** : Publication et modération d'articles avec réactions et partages
+- **Authentification** : Email/mot de passe, Google OAuth, Apple Sign-In
+- **Notifications** : Push notifications, alertes de sécurité en temps réel
+- **Livraison** : Gestion des livraisons avec preuves photo et géolocalisation
+- **Messagerie interne** : Communication modérateurs ↔ clients
+- **Administration** : Tableau de bord complet avec statistiques et gestion
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Technologies
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend** : React, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend** : Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **Paiements** : KkiaPay, Mobile Money
+- **Hébergement** : Vercel
 
-**Use your preferred IDE**
+## Installation locale
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+# Cloner le repository
+git clone <URL_GIT>
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# Installer les dépendances
+npm install
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Lancer le serveur de développement
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Structure du projet
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+src/
+├── components/     # Composants React réutilisables
+├── contexts/       # Contextes React (Auth, Cart, Language)
+├── hooks/          # Hooks personnalisés
+├── pages/          # Pages de l'application
+├── integrations/   # Intégrations (Supabase, etc.)
+└── i18n/           # Traductions multilingues
 
-**Use GitHub Codespaces**
+supabase/
+├── functions/      # Edge Functions (webhooks, API)
+└── migrations/     # Migrations SQL
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Rôles utilisateurs
 
-## What technologies are used for this project?
+- **User** : Client standard
+- **Vendor** : Vendeur avec boutique
+- **Moderator** : Modération du contenu et support client
+- **Delivery** : Livreur avec gestion des preuves
+- **Admin** : Administration complète
 
-This project is built with:
+## Sécurité
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- Row Level Security (RLS) sur toutes les tables
+- Rate limiting sur les actions sensibles
+- Validation des webhooks de paiement
+- Alertes de connexion sur nouveaux appareils
+- Audit logs des actions administratives
 
-## How can I deploy this project?
+## Licence
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Propriétaire - Tous droits réservés © Izy-Scoly

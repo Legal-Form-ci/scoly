@@ -6,6 +6,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-kkiapay-signature',
 };
 
+// Verify KkiaPay webhook signature using Web Crypto API
+async function verifyWebhookSignature(payload: string, signature: string | null, secret: string): Promise<boolean> {
+  if (!signature || !secret) {
+    console.warn('[Security] Missing signature or secret for webhook verification');
+    return false;
+  }
+  
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    const signatureBuffer = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(payload)
+    );
+    
+    const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Constant-time comparison
+    if (signature.length !== expectedSignature.length) return false;
+    
+    let result = 0;
+    for (let i = 0; i < signature.length; i++) {
+      result |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+    }
+    return result === 0;
+  } catch (error) {
+    console.error('[Security] Error verifying webhook signature:', error);
+    return false;
+  }
+}
+
 interface KkiaPayWebhookEvent {
   event: string;
   data: {
@@ -38,11 +79,31 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const kkiapaySecret = Deno.env.get('KKIAPAY_SECRET') || Deno.env.get('KKIAPAY_PRIVATE_KEY');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get raw body for signature verification
+    const rawBody = await req.text();
+    const signature = req.headers.get('x-kkiapay-signature');
+    
+    // Verify webhook signature (security fix)
+    if (kkiapaySecret) {
+      const isValid = await verifyWebhookSignature(rawBody, signature, kkiapaySecret);
+      if (!isValid) {
+        console.error('[Security] Invalid webhook signature - rejecting request');
+        return new Response(
+          JSON.stringify({ error: 'Invalid signature' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log('[Security] Webhook signature verified successfully');
+    } else {
+      console.warn('[Security] KKIAPAY_SECRET not configured - skipping signature verification');
+    }
+
     // Parse webhook payload
-    const payload: KkiaPayWebhookEvent = await req.json();
+    const payload: KkiaPayWebhookEvent = JSON.parse(rawBody);
     
     console.log('KkiaPay webhook received:', JSON.stringify(payload, null, 2));
 
@@ -240,10 +301,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error processing KkiaPay webhook:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    // Still return 200 to acknowledge receipt
+    // Return generic error message (security fix - no details leaked)
     return new Response(
-      JSON.stringify({ received: true, error: 'Webhook processing failed', details: errorMessage }),
+      JSON.stringify({ received: true, error: 'Processing failed' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

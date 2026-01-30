@@ -124,13 +124,12 @@ export const useLoginSecurity = () => {
       const deviceInfo = getDeviceInfo();
       
       // CRITICAL: Store fingerprint BEFORE creating session/notification
-      // This ensures the current device is identified before notification is created
       const deviceFingerprint = storeDeviceFingerprint();
       
       // Small delay to ensure localStorage is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 50));
       
-      // Get IP from a service (in production, this would be from the server)
+      // Get IP from a service
       let ipAddress = 'Non disponible';
       try {
         const response = await fetch('https://api.ipify.org?format=json', { 
@@ -142,7 +141,7 @@ export const useLoginSecurity = () => {
         console.log('[Security] Could not fetch IP');
       }
 
-      // Create login session
+      // Create login session (trigger is now empty - we handle notification ourselves)
       const { data: sessionData, error } = await supabase
         .from('login_sessions')
         .insert({
@@ -158,7 +157,30 @@ export const useLoginSecurity = () => {
         return;
       }
 
-      // Send push notification to OTHER devices only (not current)
+      // Create notification directly with fingerprint included
+      // This ensures the origin device is identified correctly
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          type: 'security',
+          title: 'Nouvelle connexion détectée',
+          message: `Une nouvelle connexion a été détectée depuis ${deviceInfo}. Est-ce vous ?`,
+          data: {
+            session_id: sessionData.id,
+            ip_address: ipAddress,
+            device_info: deviceInfo,
+            requires_confirmation: true,
+            origin_device_fingerprint: deviceFingerprint, // CRITICAL: Include fingerprint
+            notification_id: crypto.randomUUID()
+          }
+        });
+
+      if (notifError) {
+        console.error('[Security] Error creating notification:', notifError);
+      }
+
+      // Send push notification to OTHER devices only
       await sendLoginPushNotification(
         userId, 
         deviceInfo, 
@@ -233,20 +255,29 @@ export const useLoginSecurity = () => {
   // Block a login session (called when user clicks "Not me")
   const blockLoginSession = useCallback(async (sessionId: string) => {
     try {
-      console.log('[Security] Blocking session:', sessionId);
+      console.log('[Security] Blocking session via RPC:', sessionId);
       
-      const { error } = await supabase
-        .from('login_sessions')
-        .update({
-          is_blocked: true,
-          is_confirmed: false,
-          confirmed_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
+      // Use server-side RPC function for secure session revocation
+      const { data, error } = await supabase.rpc('revoke_blocked_session', {
+        _session_id: sessionId
+      });
 
       if (error) {
         console.error('[Security] Error blocking session:', error);
-        return false;
+        // Fallback to direct update
+        const { error: fallbackError } = await supabase
+          .from('login_sessions')
+          .update({
+            is_blocked: true,
+            is_confirmed: false,
+            confirmed_at: new Date().toISOString()
+          })
+          .eq('id', sessionId);
+        
+        if (fallbackError) {
+          console.error('[Security] Fallback also failed:', fallbackError);
+          return false;
+        }
       }
       
       console.log('[Security] Session blocked successfully');

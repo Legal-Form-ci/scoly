@@ -11,7 +11,9 @@ import {
   Eye,
   AlertTriangle,
   Loader2,
-  BarChart3
+  BarChart3,
+  Mail,
+  StickyNote
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +27,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import InternalMessaging from "@/components/messaging/InternalMessaging";
 
 interface Article {
   id: string;
@@ -324,27 +327,31 @@ const ModeratorDashboard = () => {
           </div>
 
           <Tabs defaultValue="articles" className="space-y-6">
-            <TabsList className="bg-card border border-border">
+            <TabsList className="bg-card border border-border flex-wrap h-auto">
               <TabsTrigger value="articles" className="gap-2">
                 <FileText size={16} />
-                Articles
+                <span className="hidden sm:inline">Articles</span>
                 {pendingArticles.length > 0 && (
                   <Badge variant="destructive">{pendingArticles.length}</Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="comments" className="gap-2">
                 <MessageSquare size={16} />
-                Commentaires
+                <span className="hidden sm:inline">Commentaires</span>
                 {pendingComments.length > 0 && (
                   <Badge variant="destructive">{pendingComments.length}</Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="orders" className="gap-2">
                 <ShoppingBag size={16} />
-                Commandes
+                <span className="hidden sm:inline">Commandes</span>
                 {pendingOrders.length > 0 && (
                   <Badge variant="destructive">{pendingOrders.length}</Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="messaging" className="gap-2">
+                <Mail size={16} />
+                <span className="hidden sm:inline">Messagerie</span>
               </TabsTrigger>
             </TabsList>
 
@@ -540,6 +547,11 @@ const ModeratorDashboard = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Messaging Tab */}
+            <TabsContent value="messaging">
+              <InternalMessaging isModeratorView />
             </TabsContent>
           </Tabs>
         </div>
