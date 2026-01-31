@@ -91,15 +91,28 @@ const LoginSecurityAlert = ({ notification, onClose }: LoginSecurityAlertProps) 
           .update({ is_read: true })
           .eq('id', notification.id);
 
-        // Show strong warning
+        // Show strong warning with password change prompt
         toast.warning(
-          'Session bloquée ! L\'accès depuis cet appareil a été révoqué. Si ce n\'était pas vous, changez votre mot de passe immédiatement.',
-          { duration: 10000 }
+          'Session bloquée ! L\'accès depuis cet appareil a été révoqué.',
+          { duration: 8000 }
         );
+        
+        // Prompt for password change - this is critical for security
+        // After blocking, the user should change their password immediately
+        setTimeout(() => {
+          const shouldChangePassword = window.confirm(
+            '⚠️ SÉCURITÉ IMPORTANTE\n\n' +
+            'Une connexion suspecte a été bloquée. Pour protéger votre compte, il est fortement recommandé de changer votre mot de passe immédiatement.\n\n' +
+            'Voulez-vous changer votre mot de passe maintenant ?'
+          );
+          
+          if (shouldChangePassword) {
+            // Redirect to account settings for password change
+            window.location.href = '/account?action=change-password';
+          }
+        }, 500);
 
-        // Also sign out ALL other sessions for this user (security measure)
-        // In production, you'd use a server-side function to invalidate tokens
-        console.log('[Security] Session blocked successfully. User should change password.');
+        console.log('[Security] Session blocked successfully. Password change recommended.');
       }
     } catch (error) {
       console.error('[Security] Error handling login confirmation:', error);

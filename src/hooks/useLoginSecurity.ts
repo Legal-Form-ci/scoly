@@ -6,9 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 const FINGERPRINT_KEY = 'izy_device_fingerprint';
 const FINGERPRINT_TS_KEY = 'izy_device_fingerprint_ts';
 
-// Login security alerts are currently disabled in production because they cannot reliably revoke
-// third-party JWT sessions client-side. We keep login_sessions for auditability.
-const LOGIN_SECURITY_ALERTS_ENABLED = false;
+// Login security alerts - ENABLED for trusted device notifications
+// Alerts are shown on OTHER devices when a new login occurs
+// The device that just logged in will NOT see the alert (fingerprint filtering)
+const LOGIN_SECURITY_ALERTS_ENABLED = true;
 
 export const useLoginSecurity = () => {
   const { user } = useAuth();
