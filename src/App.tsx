@@ -33,6 +33,7 @@ import VendorDashboard from "./pages/VendorDashboard";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
 import PushNotificationPrompt from "./components/PushNotificationPrompt";
 import SystemDatabase from "./pages/SystemDatabase";
+import SystemRepository from "./pages/SystemRepository";
 import OAuthBridge from "./pages/OAuthBridge";
 
 const queryClient = new QueryClient({
@@ -87,8 +88,10 @@ const App = () => (
                   <Route path="/vendor" element={<VendorDashboard />} />
                   {/* OAuth broker bridge for custom domains (prevents SPA 404 on /~oauth/*) */}
                   <Route path="/~oauth/*" element={<OAuthBridge />} />
-                  {/* Isolated database portal (admin-only) */}
+                  {/* Isolated database portal (password-protected, admin-only) */}
                   <Route path="/db" element={<SystemDatabase />} />
+                  {/* System repository portal (PIN-protected, admin-only) */}
+                  <Route path="/system/repo" element={<SystemRepository />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <ScIA />

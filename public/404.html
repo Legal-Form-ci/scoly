@@ -9,8 +9,18 @@
     <script>
       // SPA fallback: when a user lands directly on /some/route,
       // store the full URL and redirect to / so the client router can render it.
-      sessionStorage.setItem('redirect', window.location.href);
-      window.location.replace('/');
+      
+      // Special handling for OAuth routes on custom domains
+      // These need to be forwarded to the hosted OAuth broker
+      var path = window.location.pathname;
+      if (path.startsWith('/~oauth')) {
+        // Forward OAuth requests to the broker
+        window.location.replace('https://oauth.lovable.app' + path + window.location.search);
+      } else {
+        // Standard SPA redirect
+        sessionStorage.setItem('redirect', window.location.href);
+        window.location.replace('/');
+      }
     </script>
   </body>
 </html>
