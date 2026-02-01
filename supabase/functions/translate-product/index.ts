@@ -22,8 +22,9 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    // Support both legacy and new secret names for backward compatibility
+    const IZY_SCOLY_AI_KEY = Deno.env.get("IZY_SCOLY_AI_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    if (!IZY_SCOLY_AI_KEY) throw new Error("IZY_SCOLY_AI_KEY is not configured");
 
     const system =
       "You are a professional product catalog translator. Translate short product names accurately and naturally.";
@@ -33,7 +34,7 @@ serve(async (req) => {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${IZY_SCOLY_AI_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

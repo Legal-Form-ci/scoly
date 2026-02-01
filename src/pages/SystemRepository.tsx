@@ -356,7 +356,7 @@ export default function SystemRepository() {
                       "VAPID_PUBLIC_KEY",
                       "VAPID_PRIVATE_KEY",
                       "BOOTSTRAP_ADMIN_TOKEN",
-                      "LOVABLE_API_KEY",
+                      "IZY_SCOLY_AI_KEY",
                     ].map((secret) => (
                       <div key={secret} className="flex items-center justify-between p-3 border rounded-lg">
                         <code className="text-sm font-medium">{secret}</code>
