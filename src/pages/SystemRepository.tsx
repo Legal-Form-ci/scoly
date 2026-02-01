@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 const SYSTEM_PIN_HASH = "NjIwMjcyMDI="; // base64 of "62027202"
 
 export default function SystemRepository() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, rolesLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [pin, setPin] = useState("");
@@ -39,7 +39,7 @@ export default function SystemRepository() {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || rolesLoading) return;
     if (!user) {
       navigate("/auth");
       return;
@@ -47,7 +47,7 @@ export default function SystemRepository() {
     if (!isAdmin) {
       navigate("/");
     }
-  }, [user, loading, isAdmin, navigate]);
+  }, [user, loading, rolesLoading, isAdmin, navigate]);
 
   useEffect(() => {
     if (authenticated) {
@@ -108,7 +108,7 @@ export default function SystemRepository() {
     }
   };
 
-  if (loading) {
+  if (loading || rolesLoading) {
     return (
       <main className="min-h-screen bg-background">
         <Navbar />

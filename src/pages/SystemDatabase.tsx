@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const SYSTEM_PASSWORD_HASH = "QEthYmxFdGlnTmVGZWxJY1Njb2x5MjAzMEA="; // base64 of the password
 
 export default function SystemDatabase() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, rolesLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
@@ -34,7 +34,7 @@ export default function SystemDatabase() {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || rolesLoading) return;
     if (!user) {
       navigate("/auth");
       return;
@@ -42,7 +42,7 @@ export default function SystemDatabase() {
     if (!isAdmin) {
       navigate("/");
     }
-  }, [user, loading, isAdmin, navigate]);
+  }, [user, loading, rolesLoading, isAdmin, navigate]);
 
   // Handle brute-force protection
   useEffect(() => {
@@ -93,7 +93,7 @@ export default function SystemDatabase() {
     }
   };
 
-  if (loading) {
+  if (loading || rolesLoading) {
     return (
       <main className="min-h-screen bg-background">
         <Navbar />
