@@ -20,9 +20,10 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // Support both legacy and new secret names for backward compatibility
+    const IZY_SCOLY_AI_KEY = Deno.env.get("IZY_SCOLY_AI_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    if (!IZY_SCOLY_AI_KEY) {
+      throw new Error("IZY_SCOLY_AI_KEY is not configured");
     }
 
     const prompt = `Tu es un expert marketing pour une plateforme e-commerce de fournitures scolaires et bureautiques en Côte d'Ivoire appelée "Izy-Scoly".
@@ -49,7 +50,7 @@ Le link_text doit être court, engageant et en français.`;
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${IZY_SCOLY_AI_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
