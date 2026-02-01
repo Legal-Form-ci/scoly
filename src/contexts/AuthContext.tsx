@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  rolesLoading: boolean;
   roles: Array<'admin' | 'moderator' | 'user' | 'vendor' | 'delivery'>;
   isAdmin: boolean;
   refreshRoles: () => Promise<void>;
@@ -31,26 +32,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(true);
   const [roles, setRoles] = useState<Array<'admin' | 'moderator' | 'user' | 'vendor' | 'delivery'>>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
   const fetchRoles = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
+    setRolesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
 
-    if (error) {
-      console.error('Error fetching roles:', error);
-      setRoles([]);
-      setIsAdmin(false);
-      return;
+      if (error) {
+        console.error('Error fetching roles:', error);
+        setRoles([]);
+        setIsAdmin(false);
+        return;
+      }
+
+      const nextRoles = (data || []).map((r) => r.role as any);
+      setRoles(nextRoles);
+      setIsAdmin(nextRoles.includes('admin'));
+    } finally {
+      setRolesLoading(false);
     }
-
-    const nextRoles = (data || []).map((r) => r.role as any);
-    setRoles(nextRoles);
-    setIsAdmin(nextRoles.includes('admin'));
   };
 
   const refreshRoles = async () => {
@@ -106,6 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setRoles([]);
         setIsAdmin(false);
+        setRolesLoading(false);
       }
     });
 
@@ -130,6 +138,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             () => fetchRoles(session.user!.id)
           )
           .subscribe();
+      }
+
+      if (!session?.user) {
+        setRolesLoading(false);
       }
     });
 
@@ -216,6 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         user,
         session,
         loading,
+        rolesLoading,
         roles,
         isAdmin,
         refreshRoles,
