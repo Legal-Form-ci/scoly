@@ -200,18 +200,18 @@ const FeatureCard = ({ icon, title, description, color, href }: FeatureCardProps
   return (
     <Link
       to={href}
-      className={`group relative p-4 rounded-xl ${color} backdrop-blur-sm border border-primary-foreground/10 hover:border-primary-foreground/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}
+      className={`group relative p-4 rounded-xl ${color} backdrop-blur-sm border border-primary-foreground/20 hover:border-primary-foreground/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}
     >
       <div className="flex flex-col items-center text-center gap-2">
-        <div className="p-2 rounded-lg bg-primary-foreground/10 text-primary-foreground group-hover:bg-primary-foreground/20 transition-colors">
+        <div className="p-2 rounded-lg bg-primary-foreground/15 text-primary-foreground group-hover:bg-primary-foreground/25 transition-colors">
           {icon}
         </div>
         <h3 className="text-base font-display font-semibold text-primary-foreground">{title}</h3>
-        <p className="text-xs text-primary-foreground/80 line-clamp-2">{description}</p>
+        <p className="text-sm font-medium text-primary-foreground/95 leading-snug">{description}</p>
       </div>
       <ArrowRight
         size={16}
-        className="absolute top-3 right-3 text-primary-foreground/50 group-hover:text-primary-foreground group-hover:translate-x-1 transition-all"
+        className="absolute top-3 right-3 text-primary-foreground/80 group-hover:text-primary-foreground group-hover:translate-x-1 transition-all"
       />
     </Link>
   );
