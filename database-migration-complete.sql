@@ -1,8 +1,8 @@
 -- ============================================================================
 -- SCRIPT DE MIGRATION COMPLET - IZY-SCOLY
 -- ============================================================================
--- À exécuter dans l'ordre dans le SQL Editor de Supabase
--- URL: https://supabase.com/dashboard/project/duxbzpsezdhvhprwjwmk/sql
+-- IMPORTANT : dans votre éditeur SQL, collez/exécutez le CONTENU de ce fichier.
+-- Ne tapez pas "database-migration-complete.sql" comme une requête (sinon erreur 42601).
 -- ============================================================================
 
 -- ============================================================================
