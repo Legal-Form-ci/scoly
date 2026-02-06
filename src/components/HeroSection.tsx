@@ -107,69 +107,66 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* TWO COLUMN LAYOUT: Categories on left, "À la une" on right */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
-            {/* LEFT COLUMN: Categories pills */}
-            <div className="animate-slide-up animation-delay-300">
-              {/* Categories - Quick access */}
-              <div className="mb-6">
-                <p className="text-primary-foreground/70 text-sm mb-3 text-center lg:text-left">Parcourir par catégorie :</p>
-                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                  {scolyCategories.map((category) => (
-                    <Link
-                      key={category.slug}
-                      to={`/shop?category=${category.slug}`}
-                      className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
-                    >
-                      {category.name}
-                    </Link>
-                  ))}
-                  <Link
-                    to="/shop?category=scoly-bureautique"
-                    className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
-                  >
-                    Izy-Scoly Bureautique
-                  </Link>
-                  <Link
-                    to="/shop?category=scoly-librairie"
-                    className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
-                  >
-                    Izy-Scoly Librairie
-                  </Link>
-                </div>
+          {/* Categories - centered above the two columns */}
+          <div className="animate-slide-up animation-delay-200 mb-6">
+            <p className="text-primary-foreground/70 text-sm mb-3 text-center">Parcourir par catégorie :</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {scolyCategories.map((category) => (
+                <Link
+                  key={category.slug}
+                  to={`/shop?category=${category.slug}`}
+                  className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
+                >
+                  {category.name}
+                </Link>
+              ))}
+              <Link
+                to="/shop?category=scoly-bureautique"
+                className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
+              >
+                Izy-Scoly Bureautique
+              </Link>
+              <Link
+                to="/shop?category=scoly-librairie"
+                className="px-4 py-2 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 backdrop-blur-sm border border-primary-foreground/20 text-primary-foreground text-sm font-medium transition-all hover:scale-[1.03]"
+              >
+                Izy-Scoly Librairie
+              </Link>
+            </div>
+          </div>
+
+          {/* TWO COLUMN LAYOUT: Feature cards on left, "À la une" on right */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* LEFT COLUMN: 3 Feature Cards stacked vertically */}
+            <div className="lg:col-span-5 animate-slide-up animation-delay-300">
+              <div className="flex flex-col gap-3 h-full">
+                <FeatureCard
+                  icon={<ShoppingBag size={22} />}
+                  title="Catalogue"
+                  description={`${formatNumber(stats.products)} produits`}
+                  color="bg-background/95"
+                  href="/shop"
+                />
+                <FeatureCard
+                  icon={<Truck size={22} />}
+                  title="Livraison gratuite"
+                  description="Sur toutes vos commandes"
+                  color="bg-background/95"
+                  href="/shop"
+                />
+                <FeatureCard
+                  icon={<Newspaper size={22} />}
+                  title="Actualités"
+                  description={`${formatNumber(stats.articles)} publications`}
+                  color="bg-background/95"
+                  href="/actualites"
+                />
               </div>
             </div>
 
             {/* RIGHT COLUMN: "À la une" carousel (ads + articles) */}
-            <div className="animate-slide-up animation-delay-100 lg:sticky lg:top-24">
+            <div className="lg:col-span-7 animate-slide-up animation-delay-100">
               <HeroAdvertisements />
-            </div>
-          </div>
-
-          {/* 3 Feature Cards - BELOW "À la une" section, full width, pushed up with negative margin on desktop */}
-          <div className="mt-6 lg:-mt-2 animate-slide-up animation-delay-400">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <FeatureCard
-                icon={<ShoppingBag size={24} />}
-                title="Catalogue"
-                description={`${formatNumber(stats.products)} produits`}
-                color="bg-primary-foreground/10"
-                href="/shop"
-              />
-              <FeatureCard
-                icon={<Truck size={24} />}
-                title="Livraison gratuite"
-                description="Sur toutes vos commandes"
-                color="bg-secondary/20"
-                href="/shop"
-              />
-              <FeatureCard
-                icon={<Newspaper size={24} />}
-                title="Actualités"
-                description={`${formatNumber(stats.articles)} publications`}
-                color="bg-accent/20"
-                href="/actualites"
-              />
             </div>
           </div>
         </div>
@@ -200,19 +197,21 @@ const FeatureCard = ({ icon, title, description, color, href }: FeatureCardProps
   return (
     <Link
       to={href}
-      className={`group relative p-4 rounded-xl ${color} backdrop-blur-sm border border-primary-foreground/20 hover:border-primary-foreground/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}
+      className={`group relative p-4 rounded-xl ${color} shadow-lg border border-border/50 hover:border-primary/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl flex-1`}
     >
-      <div className="flex flex-col items-center text-center gap-2">
-        <div className="p-2 rounded-lg bg-primary-foreground/15 text-primary-foreground group-hover:bg-primary-foreground/25 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors shrink-0">
           {icon}
         </div>
-        <h3 className="text-base font-display font-semibold text-primary-foreground">{title}</h3>
-        <p className="text-sm font-medium text-primary-foreground/95 leading-snug">{description}</p>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-display font-bold text-foreground">{title}</h3>
+          <p className="text-sm font-medium text-muted-foreground leading-snug">{description}</p>
+        </div>
+        <ArrowRight
+          size={18}
+          className="text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0"
+        />
       </div>
-      <ArrowRight
-        size={16}
-        className="absolute top-3 right-3 text-primary-foreground/80 group-hover:text-primary-foreground group-hover:translate-x-1 transition-all"
-      />
     </Link>
   );
 };
